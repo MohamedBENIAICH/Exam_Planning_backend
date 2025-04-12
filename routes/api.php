@@ -2,6 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ClassroomController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,3 +20,20 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// Exam routes
+Route::get('/exams', [ExamController::class, 'index']);
+Route::get('/exams/latest', [ExamController::class, 'getLatestExams']);
+Route::get('/exams/{id}', [ExamController::class, 'show']);
+Route::get('/exams/count', [ExamController::class, 'count']);
+Route::post('/exams', [ExamController::class, 'store']);
+Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+
+// Student routes
+Route::get('/students', [StudentController::class, 'index']);
+Route::get('/students/count', [StudentController::class, 'count']);
+
+// Classroom routes
+Route::get('/classrooms', [ClassroomController::class, 'index']);
+Route::get('/classrooms/count', [ClassroomController::class, 'count']);
+Route::get('/classrooms/available/count', [ClassroomController::class, 'availableCount']);
