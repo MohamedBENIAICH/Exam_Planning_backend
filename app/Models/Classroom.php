@@ -18,9 +18,8 @@ class Classroom extends Model
     ];
 
     protected $casts = [
-        'disponible_pour_planification' => 'boolean',
         'liste_des_equipements' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'disponible_pour_planification' => 'boolean',
+        'capacite' => 'integer'
     ];
 }
