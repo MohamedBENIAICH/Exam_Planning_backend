@@ -23,10 +23,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Exam routes
 Route::get('/exams', [ExamController::class, 'index']);
+Route::get('/exams/count', [ExamController::class, 'count']);
 Route::get('/exams/latest', [ExamController::class, 'getLatestExams']);
 Route::get('/exams/{id}', [ExamController::class, 'show']);
-Route::get('/exams/count', [ExamController::class, 'count']);
 Route::post('/exams', [ExamController::class, 'store']);
+Route::put('/exams/{id}', [ExamController::class, 'update']);
 Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
 
 // Student routes
