@@ -38,3 +38,8 @@ Route::get('/students/count', [StudentController::class, 'count']);
 Route::get('/classrooms', [ClassroomController::class, 'index']);
 Route::get('/classrooms/count', [ClassroomController::class, 'count']);
 Route::get('/classrooms/available/count', [ClassroomController::class, 'availableCount']);
+Route::get('/classrooms/available', [ClassroomController::class, 'available']);
+Route::get('/classrooms/{id}', [ClassroomController::class, 'show']);
+Route::post('/classrooms', [ClassroomController::class, 'store']);
+Route::put('/classrooms/{id}', [ClassroomController::class, 'update']);
+Route::delete('/classrooms/{id}', [ClassroomController::class, 'destroy']);
