@@ -102,6 +102,8 @@ class ExamController extends Controller
             'superviseurs' => 'required|string',
             'classroom_ids' => 'nullable|array',
             'classroom_ids.*' => 'exists:classrooms,id',
+            'superviseur_ids' => 'nullable|array',
+            'superviseur_ids.*' => 'exists:superviseurs,id',
             'students' => 'required|array',
             'students.*.studentId' => 'required|string',
             'students.*.firstName' => 'required|string',
@@ -163,6 +165,64 @@ class ExamController extends Controller
                 ]);
             }
 
+            // Process supervisors
+            $superviseurIds = [];
+            if ($request->has('superviseur_ids') && is_array($request->superviseur_ids) && !empty($request->superviseur_ids)) {
+                // Use provided superviseur_ids
+                $superviseurIds = array_map('intval', $request->superviseur_ids);
+            } else if (!empty($request->superviseurs)) {
+                // Try to extract supervisor IDs from superviseurs field
+                $superviseursParts = explode(',', $request->superviseurs);
+                foreach ($superviseursParts as $part) {
+                    $part = trim($part);
+                    if (is_numeric($part)) {
+                        $superviseurIds[] = (int)$part;
+                    } else {
+                        // If it's a name, try to find or create the supervisor
+                        $nameParts = explode(' ', $part);
+                        $lastName = end($nameParts); // Last word is the last name
+                        $firstName = implode(' ', array_slice($nameParts, 0, -1)); // Everything else is first name
+
+                        // Try to find the supervisor by name
+                        $superviseur = \App\Models\Superviseur::where('nom', $lastName)
+                            ->where('prenom', $firstName)
+                            ->first();
+
+                        // If not found, create a new supervisor
+                        if (!$superviseur) {
+                            $superviseur = \App\Models\Superviseur::create([
+                                'nom' => $lastName,
+                                'prenom' => $firstName,
+                                'departement' => $request->filiere, // Use the exam's filiere as the department
+                                'type' => 'normal' // Default type
+                            ]);
+
+                            // Log the creation for debugging
+                            DB::table('logs')->insert([
+                                'message' => "Created new supervisor: {$firstName} {$lastName}",
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
+
+                        $superviseurIds[] = $superviseur->id;
+                    }
+                }
+            }
+
+            // Attach supervisors if we have supervisor IDs
+            if (!empty($superviseurIds)) {
+                // Attach the supervisors to the exam
+                $exam->superviseurs()->attach($superviseurIds);
+
+                // Log the attachment for debugging
+                DB::table('logs')->insert([
+                    'message' => "Attached supervisors " . implode(', ', $superviseurIds) . " to exam {$exam->id}",
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
             // Process students
             $studentIds = [];
             foreach ($request->students as $studentData) {
@@ -190,8 +250,8 @@ class ExamController extends Controller
             // Commit the transaction
             DB::commit();
 
-            // Load the students relationship
-            $exam->load('students');
+            // Load the relationships
+            $exam->load(['students', 'superviseurs']);
 
             return response()->json([
                 'status' => 'success',
@@ -283,6 +343,8 @@ class ExamController extends Controller
             'superviseurs' => 'string',
             'classroom_ids' => 'nullable|array',
             'classroom_ids.*' => 'exists:classrooms,id',
+            'superviseur_ids' => 'nullable|array',
+            'superviseur_ids.*' => 'exists:superviseurs,id',
             'students' => 'array',
             'students.*.studentId' => 'string',
             'students.*.firstName' => 'string',
@@ -334,6 +396,74 @@ class ExamController extends Controller
                 ]);
             }
 
+            // Sync supervisors if provided
+            if ($request->has('superviseur_ids')) {
+                // Ensure all supervisor IDs are integers
+                $superviseurIds = is_array($request->superviseur_ids) ? array_map('intval', $request->superviseur_ids) : [];
+
+                // Sync the supervisors with the exam
+                $exam->superviseurs()->sync($superviseurIds);
+
+                // Log the sync for debugging
+                DB::table('logs')->insert([
+                    'message' => "Synced supervisors " . implode(', ', $superviseurIds) . " with exam {$exam->id}",
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            } else if (!empty($request->superviseurs)) {
+                // Process supervisors from the superviseurs field
+                $superviseurIds = [];
+                $superviseursParts = explode(',', $request->superviseurs);
+
+                foreach ($superviseursParts as $part) {
+                    $part = trim($part);
+                    if (is_numeric($part)) {
+                        $superviseurIds[] = (int)$part;
+                    } else {
+                        // If it's a name, try to find or create the supervisor
+                        $nameParts = explode(' ', $part);
+                        $lastName = end($nameParts); // Last word is the last name
+                        $firstName = implode(' ', array_slice($nameParts, 0, -1)); // Everything else is first name
+
+                        // Try to find the supervisor by name
+                        $superviseur = \App\Models\Superviseur::where('nom', $lastName)
+                            ->where('prenom', $firstName)
+                            ->first();
+
+                        // If not found, create a new supervisor
+                        if (!$superviseur) {
+                            $superviseur = \App\Models\Superviseur::create([
+                                'nom' => $lastName,
+                                'prenom' => $firstName,
+                                'departement' => $request->filiere, // Use the exam's filiere as the department
+                                'type' => 'normal' // Default type
+                            ]);
+
+                            // Log the creation for debugging
+                            DB::table('logs')->insert([
+                                'message' => "Created new supervisor: {$firstName} {$lastName}",
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
+
+                        $superviseurIds[] = $superviseur->id;
+                    }
+                }
+
+                // Sync the supervisors with the exam
+                if (!empty($superviseurIds)) {
+                    $exam->superviseurs()->sync($superviseurIds);
+
+                    // Log the sync for debugging
+                    DB::table('logs')->insert([
+                        'message' => "Synced supervisors " . implode(', ', $superviseurIds) . " with exam {$exam->id}",
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+
             // Process students
             $studentIds = [];
             foreach ($request->students as $studentData) {
@@ -361,8 +491,8 @@ class ExamController extends Controller
             // Commit the transaction
             DB::commit();
 
-            // Load the updated exam with its students
-            $exam->load('students');
+            // Load the updated exam with its relationships
+            $exam->load(['students', 'superviseurs']);
 
             return response()->json([
                 'status' => 'success',
