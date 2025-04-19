@@ -7,6 +7,7 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExamController extends Controller
 {
@@ -99,6 +100,8 @@ class ExamController extends Controller
             'heure_fin' => 'required|date_format:H:i',
             'locaux' => 'required|string',
             'superviseurs' => 'required|string',
+            'classroom_ids' => 'nullable|array',
+            'classroom_ids.*' => 'exists:classrooms,id',
             'students' => 'required|array',
             'students.*.studentId' => 'required|string',
             'students.*.firstName' => 'required|string',
@@ -130,6 +133,35 @@ class ExamController extends Controller
                 'locaux' => $request->locaux,
                 'superviseurs' => $request->superviseurs
             ]);
+
+            // Extract classroom IDs from the locaux field if classroom_ids is not provided
+            $classroomIds = [];
+            if ($request->has('classroom_ids') && is_array($request->classroom_ids) && !empty($request->classroom_ids)) {
+                // Use provided classroom_ids
+                $classroomIds = array_map('intval', $request->classroom_ids);
+            } else if (!empty($request->locaux)) {
+                // Try to extract classroom IDs from locaux field
+                $locauxParts = explode(',', $request->locaux);
+                foreach ($locauxParts as $part) {
+                    $part = trim($part);
+                    if (is_numeric($part)) {
+                        $classroomIds[] = (int)$part;
+                    }
+                }
+            }
+
+            // Attach classrooms if we have classroom IDs
+            if (!empty($classroomIds)) {
+                // Attach the classrooms to the exam
+                $exam->classrooms()->attach($classroomIds);
+
+                // Log the attachment for debugging
+                DB::table('logs')->insert([
+                    'message' => "Attached classrooms " . implode(', ', $classroomIds) . " to exam {$exam->id}",
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
 
             // Process students
             $studentIds = [];
@@ -226,6 +258,124 @@ class ExamController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve latest exams',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified exam in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'cycle' => 'string',
+            'filiere' => 'string',
+            'module' => 'string',
+            'date_examen' => 'date',
+            'heure_debut' => 'date_format:H:i',
+            'heure_fin' => 'date_format:H:i',
+            'locaux' => 'string',
+            'superviseurs' => 'string',
+            'classroom_ids' => 'nullable|array',
+            'classroom_ids.*' => 'exists:classrooms,id',
+            'students' => 'array',
+            'students.*.studentId' => 'string',
+            'students.*.firstName' => 'string',
+            'students.*.lastName' => 'string',
+            'students.*.email' => 'email',
+            'students.*.program' => 'string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Start a database transaction
+            DB::beginTransaction();
+
+            // Find the exam
+            $exam = Exam::findOrFail($id);
+
+            // Update exam details
+            $exam->update([
+                'cycle' => $request->cycle,
+                'filiere' => $request->filiere,
+                'module' => $request->module,
+                'date_examen' => $request->date_examen,
+                'heure_debut' => $request->heure_debut,
+                'heure_fin' => $request->heure_fin,
+                'locaux' => $request->locaux,
+                'superviseurs' => $request->superviseurs
+            ]);
+
+            // Sync classrooms if provided
+            if ($request->has('classroom_ids')) {
+                // Ensure all classroom IDs are integers
+                $classroomIds = is_array($request->classroom_ids) ? array_map('intval', $request->classroom_ids) : [];
+
+                // Sync the classrooms with the exam
+                $exam->classrooms()->sync($classroomIds);
+
+                // Log the sync for debugging
+                DB::table('logs')->insert([
+                    'message' => "Synced classrooms " . implode(', ', $classroomIds) . " with exam {$exam->id}",
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            // Process students
+            $studentIds = [];
+            foreach ($request->students as $studentData) {
+                // Check if student already exists
+                $student = Student::where('numero_etudiant', $studentData['studentId'])->first();
+
+                if (!$student) {
+                    // Create new student if not exists
+                    $student = Student::create([
+                        'nom' => $studentData['lastName'],
+                        'prenom' => $studentData['firstName'],
+                        'numero_etudiant' => $studentData['studentId'],
+                        'email' => $studentData['email'],
+                        'filiere' => $studentData['program'],
+                        'niveau' => 'L3' // Default value, adjust as needed
+                    ]);
+                }
+
+                $studentIds[] = $student->id;
+            }
+
+            // Sync students (this will remove any students not in the new list and add new ones)
+            $exam->students()->sync($studentIds);
+
+            // Commit the transaction
+            DB::commit();
+
+            // Load the updated exam with its students
+            $exam->load('students');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Exam updated successfully',
+                'data' => $exam
+            ], 200);
+        } catch (\Exception $e) {
+            // Rollback the transaction if an error occurs
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update exam',
                 'error' => $e->getMessage()
             ], 500);
         }

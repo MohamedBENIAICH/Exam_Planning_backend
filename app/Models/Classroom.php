@@ -22,4 +22,9 @@ class Classroom extends Model
         'disponible_pour_planification' => 'boolean',
         'capacite' => 'integer'
     ];
+
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class);
+    }
 }

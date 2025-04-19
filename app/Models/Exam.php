@@ -30,4 +30,18 @@ class Exam extends Model
     {
         return $this->belongsToMany(Student::class);
     }
+
+    public function classrooms()
+    {
+        return $this->belongsToMany(Classroom::class);
+    }
+
+    /**
+     * The supervisors assigned to the exam.
+     */
+    public function superviseurs()
+    {
+        return $this->belongsToMany(Superviseur::class, 'exam_superviseur')
+            ->withTimestamps();
+    }
 }
