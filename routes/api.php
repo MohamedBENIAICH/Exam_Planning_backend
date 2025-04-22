@@ -35,6 +35,7 @@ Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
 // Student routes
 Route::get('/students', [StudentController::class, 'index']);
 Route::get('/students/count', [StudentController::class, 'count']);
+Route::get('/students/by-exam/{examId}', [StudentController::class, 'getStudentsByExamId']);
 
 // Classroom routes
 Route::get('/classrooms', [ClassroomController::class, 'index']);
