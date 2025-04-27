@@ -186,4 +186,33 @@ class ClassroomController extends Controller
             ], 500);
         }
     }
+
+    public function updateDisponibilite(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'disponible_pour_planification' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        try {
+            $classroom = Classroom::findOrFail($id);
+            $classroom->disponible_pour_planification = $request->input('disponible_pour_planification');
+            $classroom->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Disponibilité mise à jour avec succès',
+                'classroom' => $classroom
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Échec de la mise à jour de la disponibilité',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

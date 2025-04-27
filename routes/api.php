@@ -10,6 +10,7 @@ use App\Http\Controllers\SuperviseurController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExamClassroomAssignmentController;
+use App\Http\Controllers\ModuleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +53,7 @@ Route::get('/classrooms/{id}', [ClassroomController::class, 'show']);
 Route::post('/classrooms', [ClassroomController::class, 'store']);
 Route::put('/classrooms/{id}', [ClassroomController::class, 'update']);
 Route::delete('/classrooms/{id}', [ClassroomController::class, 'destroy']);
+Route::put('/classrooms/{id}/disponibilite', [ClassroomController::class, 'updateDisponibilite']);
 
 // Test route
 Route::get('/test-classroom-exam', [TestController::class, 'testClassroomExamRelationship']);
@@ -125,3 +127,6 @@ Route::prefix('exams')->group(function () {
     Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);
     Route::delete('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'destroy']);
 });
+
+// Module routes
+Route::get('/modules/{id}/name', [ModuleController::class, 'getModuleName']);
