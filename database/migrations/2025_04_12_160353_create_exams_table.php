@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
-            $table->string('cycle');
+            $table->string('formation');
             $table->string('filiere');
             $table->string('module');
+            $table->string('semestre');
             $table->date('date_examen');
             $table->time('heure_debut');
-            $table->integer('duree'); // Duration in minutes
+            $table->time('heure_fin');
             $table->string('locaux');
             $table->string('superviseurs');
             $table->timestamps();

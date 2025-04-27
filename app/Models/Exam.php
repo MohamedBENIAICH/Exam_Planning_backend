@@ -10,9 +10,10 @@ class Exam extends Model
     use HasFactory;
 
     protected $fillable = [
-        'cycle',
+        'formation',
         'filiere',
         'module',
+        'semestre',
         'date_examen',
         'heure_debut',
         'heure_fin',
@@ -22,8 +23,8 @@ class Exam extends Model
 
     protected $casts = [
         'date_examen' => 'date',
-        'heure_debut' => 'datetime',
-        'heure_fin' => 'datetime',
+        'heure_debut' => 'datetime:H:i',
+        'heure_fin' => 'datetime:H:i',
     ];
 
     public function students()

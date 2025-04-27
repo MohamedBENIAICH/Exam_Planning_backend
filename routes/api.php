@@ -7,6 +7,9 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\SuperviseurController;
+use App\Http\Controllers\FormationController;
+use App\Http\Controllers\DepartementController;
+use App\Http\Controllers\ExamClassroomAssignmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +39,9 @@ Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
 Route::get('/students', [StudentController::class, 'index']);
 Route::get('/students/count', [StudentController::class, 'count']);
 Route::get('/students/by-exam/{examId}', [StudentController::class, 'getStudentsByExamId']);
+
+// Department routes
+Route::get('/departements', [DepartementController::class, 'index']);
 
 // Classroom routes
 Route::get('/classrooms', [ClassroomController::class, 'index']);
@@ -107,3 +113,15 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
 // Supervisor routes
 Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
 Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
+
+// Formation routes
+Route::get('/formations', [FormationController::class, 'index']);
+Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
+Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
+
+// Exam Classroom Assignment Routes
+Route::prefix('exams')->group(function () {
+    Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);
+    Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);
+    Route::delete('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'destroy']);
+});
