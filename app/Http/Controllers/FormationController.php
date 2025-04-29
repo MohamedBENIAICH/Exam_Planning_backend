@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Formation;
 use App\Models\Module;
+use App\Models\Filiere;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -89,6 +90,42 @@ class FormationController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve modules',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get formation and filiere by their IDs.
+     *
+     * @param int $id_formation
+     * @param int $id_filiere
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFormationAndFiliere($id_formation, $id_filiere)
+    {
+        try {
+            $formation = Formation::findOrFail($id_formation);
+            $filiere = Filiere::where('id_filiere', $id_filiere)
+                ->where('id_formation', $id_formation)
+                ->firstOrFail();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'formation' => $formation,
+                    'filiere' => $filiere
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Formation or Filiere not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve formation and filiere',
                 'error' => $e->getMessage()
             ], 500);
         }

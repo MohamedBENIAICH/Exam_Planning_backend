@@ -20,10 +20,10 @@ return new class extends Migration
             $table->timestamps();
 
             // A student can only be assigned once per exam
-            $table->unique(['exam_id', 'student_id']);
+            $table->unique(['exam_id', 'student_id'], 'exam_student_unique');
 
             // Seat numbers must be unique within a classroom for an exam
-            $table->unique(['exam_id', 'classroom_id', 'seat_number']);
+            $table->unique(['exam_id', 'classroom_id', 'seat_number'], 'exam_classroom_seat_unique');
         });
     }
 

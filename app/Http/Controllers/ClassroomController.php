@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\Exam;
+use App\Models\ClassroomExamSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ClassroomController extends Controller
 {
@@ -172,13 +176,26 @@ class ClassroomController extends Controller
     public function available()
     {
         try {
+            \Illuminate\Support\Facades\Log::info('Fetching available classrooms');
+            \Illuminate\Support\Facades\Log::info('Raw SQL: ' . Classroom::where('disponible_pour_planification', true)->toSql());
+            \Illuminate\Support\Facades\Log::info('Bindings: ' . json_encode(Classroom::where('disponible_pour_planification', true)->getBindings()));
+
             $classrooms = Classroom::where('disponible_pour_planification', true)->get();
+            \Illuminate\Support\Facades\Log::info('Found ' . $classrooms->count() . ' available classrooms');
+            \Illuminate\Support\Facades\Log::info('Classrooms data: ' . json_encode($classrooms));
+
+            if ($classrooms->isEmpty()) {
+                \Illuminate\Support\Facades\Log::warning('No classrooms found with disponible_pour_planification = true');
+                \Illuminate\Support\Facades\Log::info('All classrooms: ' . json_encode(Classroom::all()));
+            }
 
             return response()->json([
                 'status' => 'success',
                 'data' => $classrooms
             ], 200);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error fetching available classrooms: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve available classrooms',
@@ -211,6 +228,257 @@ class ClassroomController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Échec de la mise à jour de la disponibilité',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Schedule an exam in a classroom.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function scheduleExam(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'classroom_id' => 'required|exists:classrooms,id',
+            'exam_id' => 'required|exists:exams,id',
+            'date_examen' => 'required|date',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Check if classroom is available for the given time slot
+            $isAvailable = !ClassroomExamSchedule::where('classroom_id', $request->classroom_id)
+                ->where('date_examen', $request->date_examen)
+                ->where(function ($query) use ($request) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('heure_debut', '<=', $request->heure_debut)
+                            ->where('heure_fin', '>', $request->heure_debut);
+                    })->orWhere(function ($q) use ($request) {
+                        $q->where('heure_debut', '<', $request->heure_fin)
+                            ->where('heure_fin', '>=', $request->heure_fin);
+                    })->orWhere(function ($q) use ($request) {
+                        $q->where('heure_debut', '>=', $request->heure_debut)
+                            ->where('heure_fin', '<=', $request->heure_fin);
+                    });
+                })
+                ->exists();
+
+            if (!$isAvailable) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Classroom is not available for the specified time slot'
+                ], 409);
+            }
+
+            // Create the schedule
+            $schedule = ClassroomExamSchedule::create([
+                'classroom_id' => $request->classroom_id,
+                'exam_id' => $request->exam_id,
+                'date_examen' => $request->date_examen,
+                'heure_debut' => $request->heure_debut,
+                'heure_fin' => $request->heure_fin,
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Exam scheduled successfully',
+                'data' => $schedule
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to schedule exam',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available classrooms for a specific date and time slot.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAvailableClassrooms(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'date_examen' => 'required|date',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Get all classrooms that are not scheduled for the given time slot
+            $availableClassrooms = Classroom::where('disponible_pour_planification', true)
+                ->whereNotIn('id', function ($query) use ($request) {
+                    $query->select('classroom_id')
+                        ->from('classroom_exam_schedule')
+                        ->where('date_examen', $request->date_examen)
+                        ->where(function ($q) use ($request) {
+                            $q->where(function ($subq) use ($request) {
+                                $subq->where('heure_debut', '<=', $request->heure_debut)
+                                    ->where('heure_fin', '>', $request->heure_debut);
+                            })->orWhere(function ($subq) use ($request) {
+                                $subq->where('heure_debut', '<', $request->heure_fin)
+                                    ->where('heure_fin', '>=', $request->heure_fin);
+                            })->orWhere(function ($subq) use ($request) {
+                                $subq->where('heure_debut', '>=', $request->heure_debut)
+                                    ->where('heure_fin', '<=', $request->heure_fin);
+                            });
+                        });
+                })
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $availableClassrooms
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve available classrooms',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get a classroom by its name.
+     *
+     * @param string $classroomName
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getByName($classroomName)
+    {
+        try {
+            $classroom = Classroom::where('nom_du_local', $classroomName)->first();
+
+            if (!$classroom) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Classroom not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $classroom
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve classroom',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get classrooms by date and time range.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getClassroomsByDateTime(Request $request)
+    {
+        try {
+            // Log the request
+            \Illuminate\Support\Facades\Log::info('=== CLASSROOM SEARCH START ===');
+            \Illuminate\Support\Facades\Log::info('Request data:', $request->all());
+
+            $validator = Validator::make($request->all(), [
+                'date_examen' => 'required|date',
+                'heure_debut' => 'required|date_format:H:i',
+                'heure_fin' => 'required|date_format:H:i|after:heure_debut',
+            ]);
+
+            if ($validator->fails()) {
+                \Illuminate\Support\Facades\Log::error('Validation failed:', [
+                    'errors' => $validator->errors(),
+                    'input' => $request->all()
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Format the time values to match the database time format
+            $heureDebut = date('H:i:s', strtotime($request->heure_debut));
+            $heureFin = date('H:i:s', strtotime($request->heure_fin));
+
+            // Get classroom IDs that are scheduled for the given time slot
+            $query = DB::table('classroom_exam_schedule')
+                ->where('date_examen', $request->date_examen)
+                ->where(function ($q) use ($heureDebut, $heureFin) {
+                    $q->where(function ($subq) use ($heureDebut, $heureFin) {
+                        $subq->where('heure_debut', '<=', $heureDebut)
+                            ->where('heure_fin', '>', $heureDebut);
+                    })->orWhere(function ($subq) use ($heureDebut, $heureFin) {
+                        $subq->where('heure_debut', '<', $heureFin)
+                            ->where('heure_fin', '>=', $heureFin);
+                    })->orWhere(function ($subq) use ($heureDebut, $heureFin) {
+                        $subq->where('heure_debut', '>=', $heureDebut)
+                            ->where('heure_fin', '<=', $heureFin);
+                    });
+                });
+
+            // Log the SQL query
+            \Illuminate\Support\Facades\Log::info('SQL Query:', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+                'formatted_times' => [
+                    'heure_debut' => $heureDebut,
+                    'heure_fin' => $heureFin
+                ]
+            ]);
+
+            $scheduledClassroomIds = $query->pluck('classroom_id')->toArray();
+
+            // Log the results
+            \Illuminate\Support\Facades\Log::info('Search results:', [
+                'count' => count($scheduledClassroomIds),
+                'ids' => $scheduledClassroomIds
+            ]);
+            \Illuminate\Support\Facades\Log::info('=== CLASSROOM SEARCH END ===');
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'scheduled_classroom_ids' => $scheduledClassroomIds
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in getClassroomsByDateTime:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->all()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve scheduled classrooms',
                 'error' => $e->getMessage()
             ], 500);
         }

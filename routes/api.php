@@ -45,15 +45,23 @@ Route::get('/students/by-exam/{examId}', [StudentController::class, 'getStudents
 Route::get('/departements', [DepartementController::class, 'index']);
 
 // Classroom routes
-Route::get('/classrooms', [ClassroomController::class, 'index']);
-Route::get('/classrooms/count', [ClassroomController::class, 'count']);
-Route::get('/classrooms/available/count', [ClassroomController::class, 'availableCount']);
-Route::get('/classrooms/available', [ClassroomController::class, 'available']);
-Route::get('/classrooms/{id}', [ClassroomController::class, 'show']);
-Route::post('/classrooms', [ClassroomController::class, 'store']);
-Route::put('/classrooms/{id}', [ClassroomController::class, 'update']);
-Route::delete('/classrooms/{id}', [ClassroomController::class, 'destroy']);
-Route::put('/classrooms/{id}/disponibilite', [ClassroomController::class, 'updateDisponibilite']);
+Route::prefix('classrooms')->group(function () {
+    Route::get('/', [ClassroomController::class, 'index']);
+    Route::get('/available-count', [ClassroomController::class, 'availableCount']);
+    Route::get('/count', [ClassroomController::class, 'count']);
+    Route::get('/available', [ClassroomController::class, 'available']);
+    Route::get('/name/{classroomName}', [ClassroomController::class, 'getByName']);
+    Route::post('/', [ClassroomController::class, 'store']);
+    Route::get('/{id}', [ClassroomController::class, 'show']);
+    Route::put('/{id}', [ClassroomController::class, 'update']);
+    Route::delete('/{id}', [ClassroomController::class, 'destroy']);
+    Route::put('/{id}/disponibilite', [ClassroomController::class, 'updateDisponibilite']);
+
+    // New routes for exam scheduling
+    Route::post('/schedule-exam', [ClassroomController::class, 'scheduleExam']);
+    Route::get('/available-for-slot', [ClassroomController::class, 'getAvailableClassrooms']);
+    Route::get('/search', [ClassroomController::class, 'getClassroomsByDateTime']);
+});
 
 // Test route
 Route::get('/test-classroom-exam', [TestController::class, 'testClassroomExamRelationship']);
@@ -120,6 +128,7 @@ Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllD
 Route::get('/formations', [FormationController::class, 'index']);
 Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
 Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
+Route::get('/formations/{id_formation}/filieres/{id_filiere}', [FormationController::class, 'getFormationAndFiliere']);
 
 // Exam Classroom Assignment Routes
 Route::prefix('exams')->group(function () {

@@ -147,6 +147,17 @@ class ExamController extends Controller
                 // Sync the classrooms with the exam
                 $exam->classrooms()->sync($classroomIds);
 
+                // Create schedule entries for each classroom
+                foreach ($classroomIds as $classroomId) {
+                    \App\Models\ClassroomExamSchedule::create([
+                        'classroom_id' => $classroomId,
+                        'exam_id' => $exam->id,
+                        'date_examen' => $request->date_examen,
+                        'heure_debut' => $request->heure_debut,
+                        'heure_fin' => $request->heure_fin,
+                    ]);
+                }
+
                 // Log the sync for debugging
                 DB::table('logs')->insert([
                     'message' => "Synced classrooms " . implode(', ', $classroomIds) . " with exam {$exam->id}",
@@ -328,6 +339,17 @@ class ExamController extends Controller
 
                 // Sync the classrooms with the exam
                 $exam->classrooms()->sync($classroomIds);
+
+                // Create schedule entries for each classroom
+                foreach ($classroomIds as $classroomId) {
+                    \App\Models\ClassroomExamSchedule::create([
+                        'classroom_id' => $classroomId,
+                        'exam_id' => $exam->id,
+                        'date_examen' => $request->date_examen,
+                        'heure_debut' => $request->heure_debut,
+                        'heure_fin' => $request->heure_fin,
+                    ]);
+                }
 
                 // Log the sync for debugging
                 DB::table('logs')->insert([
