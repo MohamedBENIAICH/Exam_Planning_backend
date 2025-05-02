@@ -14,12 +14,12 @@ class Classroom extends Model
         'departement',
         'capacite',
         'liste_des_equipements',
-        'disponible_pour_planification'
+        // 'disponible_pour_planification'
     ];
 
     protected $casts = [
         'liste_des_equipements' => 'array',
-        'disponible_pour_planification' => 'boolean',
+        // 'disponible_pour_planification' => 'boolean',
         'capacite' => 'integer'
     ];
 

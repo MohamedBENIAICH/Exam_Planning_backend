@@ -16,71 +16,121 @@ use App\Http\Controllers\ModuleController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
+| These routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group.
 */
 
+// Auth route
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Exam routes
-Route::get('/exams', [ExamController::class, 'index']);
-Route::get('/exams/count', [ExamController::class, 'count']);
-Route::get('/exams/latest', [ExamController::class, 'getLatestExams']);
-Route::get('/exams/{id}', [ExamController::class, 'show']);
-Route::post('/exams', [ExamController::class, 'store']);
-Route::put('/exams/{id}', [ExamController::class, 'update']);
-Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+/*
+|--------------------------------------------------------------------------
+| Exam Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('exams')->group(function () {
+    Route::get('/', [ExamController::class, 'index']);
+    Route::get('/count', [ExamController::class, 'count']);
+    Route::get('/latest', [ExamController::class, 'getLatestExams']);
+    Route::get('/{id}', [ExamController::class, 'show']);
+    Route::post('/', [ExamController::class, 'store']);
+    Route::put('/{id}', [ExamController::class, 'update']);
+    Route::delete('/{id}', [ExamController::class, 'destroy']);
 
-// Student routes
+    // Exam-Classroom Assignment
+    Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);
+    Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);
+    Route::delete('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Student Routes
+|--------------------------------------------------------------------------
+*/
 Route::get('/students', [StudentController::class, 'index']);
 Route::get('/students/count', [StudentController::class, 'count']);
 Route::get('/students/by-exam/{examId}', [StudentController::class, 'getStudentsByExamId']);
 
-// Department routes
-Route::get('/departements', [DepartementController::class, 'index']);
-
-// Classroom routes
+/*
+|--------------------------------------------------------------------------
+| Classroom Routes
+|--------------------------------------------------------------------------
+*/
 Route::prefix('classrooms')->group(function () {
-    Route::get('/', [ClassroomController::class, 'index']);
+    // Specific routes first to avoid conflicts
+    Route::get('/search', [ClassroomController::class, 'getClassroomsByDateTime']);
+    Route::get('/available', [ClassroomController::class, 'available']);
     Route::get('/available-count', [ClassroomController::class, 'availableCount']);
     Route::get('/count', [ClassroomController::class, 'count']);
-    Route::get('/available', [ClassroomController::class, 'available']);
     Route::get('/name/{classroomName}', [ClassroomController::class, 'getByName']);
+    Route::get('/available-for-slot', [ClassroomController::class, 'getAvailableClassrooms']);
+    Route::post('/schedule-exam', [ClassroomController::class, 'scheduleExam']);
+    Route::post('/not-in-list', [ClassroomController::class, 'getClassroomsNotInList']);
+
+    // Standard CRUD
+    Route::get('/', [ClassroomController::class, 'index']);
     Route::post('/', [ClassroomController::class, 'store']);
     Route::get('/{id}', [ClassroomController::class, 'show']);
     Route::put('/{id}', [ClassroomController::class, 'update']);
     Route::delete('/{id}', [ClassroomController::class, 'destroy']);
     Route::put('/{id}/disponibilite', [ClassroomController::class, 'updateDisponibilite']);
-
-    // New routes for exam scheduling
-    Route::post('/schedule-exam', [ClassroomController::class, 'scheduleExam']);
-    Route::get('/available-for-slot', [ClassroomController::class, 'getAvailableClassrooms']);
-    Route::get('/search', [ClassroomController::class, 'getClassroomsByDateTime']);
 });
 
-// Test route
+/*
+|--------------------------------------------------------------------------
+| Formation Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/formations', [FormationController::class, 'index']);
+Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
+Route::get('/formations/{id_formation}/filieres/{id_filiere}', [FormationController::class, 'getFormationAndFiliere']);
+Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
+
+/*
+|--------------------------------------------------------------------------
+| Superviseur Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
+Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
+
+/*
+|--------------------------------------------------------------------------
+| Departement Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/departements', [DepartementController::class, 'index']);
+
+/*
+|--------------------------------------------------------------------------
+| Module Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/modules/{id}/name', [ModuleController::class, 'getModuleName']);
+
+/*
+|--------------------------------------------------------------------------
+| Test Routes
+|--------------------------------------------------------------------------
+*/
 Route::get('/test-classroom-exam', [TestController::class, 'testClassroomExamRelationship']);
 
-// Test route for creating an exam with classroom_ids
+// Create Exam with Classroom test
 Route::post('/test-create-exam-with-classrooms', function (Request $request) {
     try {
-        // Create a test classroom if it doesn't exist
         $classroom = \App\Models\Classroom::firstOrCreate(
             ['nom_du_local' => 'Test Classroom'],
             [
                 'departement' => 'Test Department',
                 'capacite' => 30,
                 'liste_des_equipements' => ['projector', 'whiteboard'],
-                'disponible_pour_planification' => true
+                'disponible_pour_planification' => true,
             ]
         );
 
-        // Create a test exam
         $exam = \App\Models\Exam::create([
             'cycle' => 'Test Cycle',
             'filiere' => 'Test Filiere',
@@ -89,19 +139,16 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
             'heure_debut' => now(),
             'heure_fin' => now()->addHours(2),
             'locaux' => 'Test Locaux',
-            'superviseurs' => 'Test Superviseurs'
+            'superviseurs' => 'Test Superviseurs',
         ]);
 
-        // Attach the classroom to the exam
         $exam->classrooms()->attach($classroom->id);
 
-        // Check if the relationship was created
         $classroomExamCount = \Illuminate\Support\Facades\DB::table('classroom_exam')
             ->where('exam_id', $exam->id)
             ->where('classroom_id', $classroom->id)
             ->count();
 
-        // Get the exam with its classrooms
         $examWithClassrooms = \App\Models\Exam::with('classrooms')->find($exam->id);
 
         return response()->json([
@@ -109,33 +156,13 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
             'message' => 'Test completed successfully',
             'classroom_exam_count' => $classroomExamCount,
             'exam' => $examWithClassrooms,
-            'classroom' => $classroom
+            'classroom' => $classroom,
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
             'message' => 'Test failed',
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
         ], 500);
     }
 });
-
-// Supervisor routes
-Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
-Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
-
-// Formation routes
-Route::get('/formations', [FormationController::class, 'index']);
-Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
-Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
-Route::get('/formations/{id_formation}/filieres/{id_filiere}', [FormationController::class, 'getFormationAndFiliere']);
-
-// Exam Classroom Assignment Routes
-Route::prefix('exams')->group(function () {
-    Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);
-    Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);
-    Route::delete('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'destroy']);
-});
-
-// Module routes
-Route::get('/modules/{id}/name', [ModuleController::class, 'getModuleName']);
