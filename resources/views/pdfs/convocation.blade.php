@@ -3,22 +3,30 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convocation à l'examen</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
             padding: 0;
             color: #333;
-            background-color: #f9f9f9;
+            background-color: #fff;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 21cm;
+            height: 29.7cm;
             margin: 0 auto;
             background-color: white;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            padding: 1.5cm 1.5cm;
+            box-sizing: border-box;
+            position: relative;
         }
 
         .header {
@@ -26,37 +34,39 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #1a3c5e;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            width: 100%;
         }
 
-        .logo {
-            width: 120px;
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f0f0f0;
-            border-radius: 10px;
+        .logo-left {
+            width: 80px;
+            height: 80px;
+            align-self: flex-start;
         }
 
-        .logo-placeholder {
-            font-size: 12px;
-            text-align: center;
-            color: #666;
+        .logo-right {
+            width: 80px;
+            height: 80px;
+            align-self: flex-end;
+        }
+
+        .logo-left img,
+        .logo-right img {
+            max-width: 100%;
+            max-height: 100%;
         }
 
         .title-section {
             text-align: center;
-            padding: 10px 20px;
-            margin: 20px 0;
-            position: relative;
+            padding: 5px 0;
+            margin: 10px 0;
         }
 
         h1 {
             color: #1a3c5e;
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
             text-transform: uppercase;
             font-weight: bold;
         }
@@ -65,48 +75,68 @@
             content: '';
             display: block;
             height: 3px;
-            width: 100px;
+            width: 80px;
             background: #d4af37;
-            margin: 10px auto 0;
+            margin: 8px auto 0;
         }
 
         .content {
-            margin-bottom: 30px;
-            line-height: 1.6;
+            margin-bottom: 15px;
+            line-height: 1.4;
         }
 
         p {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        h3 {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #1a3c5e;
         }
 
         .exam-details {
             background-color: #f5f9ff;
             border-left: 4px solid #1a3c5e;
-            padding: 15px 20px;
-            margin: 20px 0;
+            padding: 8px 12px;
+            margin: 12px 0;
         }
 
         .student-details {
             background-color: #f0f7f0;
             border-left: 4px solid #2e7d32;
-            padding: 15px 20px;
-            margin: 20px 0;
+            padding: 8px 12px;
+            margin: 12px 0;
         }
 
         .qr-code {
             text-align: center;
-            margin: 30px 0;
-            padding: 20px;
+            margin: 15px 0;
+            padding: 8px;
             border: 1px dashed #ccc;
             background-color: #f9f9f9;
         }
 
+        .qr-code img {
+            width: 120px;
+            height: auto;
+        }
+
+        .qr-code p {
+            margin: 5px 0 0;
+            font-size: 12px;
+        }
+
         .footer {
-            margin-top: 50px;
+            position: absolute;
+            bottom: 1.5cm;
+            left: 1.5cm;
+            right: 1.5cm;
             text-align: center;
-            font-size: 14px;
+            font-size: 11px;
             color: #666;
-            padding-top: 20px;
+            padding-top: 8px;
             border-top: 1px solid #eee;
         }
 
@@ -117,12 +147,13 @@
 
         .details-item {
             display: flex;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
         }
 
         .details-label {
             font-weight: bold;
-            width: 130px;
+            width: 110px;
             color: #555;
         }
 
@@ -131,8 +162,9 @@
         }
 
         .signature {
-            margin-top: 40px;
             text-align: right;
+            font-size: 13px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -140,15 +172,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">
-                <div class="logo-placeholder">
-                    <img src="{{ asset('../images/uca.jpeg') }}" alt="Logo de l'université">
-                </div>
+            <div class="logo-left">
+                <img src="{{ public_path('images/uca.jpeg') }}" alt="Logo de l'université">
             </div>
-            <div class="logo">
-                <div class="logo-placeholder">
-                    <img src="{{ asset('../images/logo fst.jpeg') }}" alt="Logo de la faculté">
-                </div>
+            <div class="logo-right">
+                <img src="{{ public_path('images/logofst.jpeg') }}" alt="Logo de la faculté">
             </div>
         </div>
 
@@ -189,22 +217,24 @@
             <div class="student-details">
                 <h3>Informations de l'étudiant</h3>
                 <div class="details-item">
-                    <div class="details-label">CNE :</div>
-                    <div class="details-value">{{ $student->cne }}</div>
+                    <div class="details-label">Code Apogée :</div>
+                    <div class="details-value">
+                        {{ $student->cne ?? ($student->numero_etudiant ?? 'Non renseigné') }}
+                    </div>
                 </div>
                 <div class="details-item">
                     <div class="details-label">Nom :</div>
-                    <div class="details-value">{{ $student->nom }}</div>
+                    <div class="details-value">{{ $student->prenom }}</div>
                 </div>
                 <div class="details-item">
                     <div class="details-label">Prénom :</div>
-                    <div class="details-value">{{ $student->prenom }}</div>
+                    <div class="details-value">{{ $student->nom }}</div>
                 </div>
             </div>
         </div>
 
         <div class="qr-code">
-            <img src="{{ $qrCodePath }}" alt="QR Code" style="width: 200px;">
+            <img src="{{ public_path('storage/qrcodes/' . basename($qrCodePath)) }}" alt="QR Code">
             <p>Veuillez scanner ce QR code à l'entrée de la salle d'examen</p>
         </div>
 

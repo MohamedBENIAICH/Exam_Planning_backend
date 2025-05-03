@@ -21,6 +21,7 @@ class ExamNotificationService
 
     public function generateAndSendNotifications(Exam $exam)
     {
+        $exam->load('classrooms');
         $students = $exam->students;
         Log::info('Début de l\'envoi des notifications', ['exam_id' => $exam->id, 'students_count' => count($students)]);
 
@@ -75,7 +76,7 @@ class ExamNotificationService
                         'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                         'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                         'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
-                        'salle' => $exam->classrooms->first() ? $exam->classrooms->first()->nom : 'Salle non spécifiée'
+                        'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée'
                     ]
                 ];
 
@@ -132,9 +133,9 @@ class ExamNotificationService
                 'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                 'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                 'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
-                'salle' => $exam->classrooms->first() ? $exam->classrooms->first()->nom : 'Salle non spécifiée'
+                'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée'
             ],
-            'qrCodePath' => Storage::url('public/' . $student->qr_code)
+            'qrCodePath' => asset('storage/' . $student->qr_code)
         ];
 
         // Générer le PDF
