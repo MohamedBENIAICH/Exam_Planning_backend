@@ -15,7 +15,18 @@ class Student extends Model
         'numero_etudiant',
         'email',
         'filiere',
-        'niveau'
+        'niveau',
+        'qr_code',
+        'cne'
+    ];
+
+    protected $rules = [
+        'nom' => 'required|string|max:255',
+        'prenom' => 'required|string|max:255',
+        'cne' => 'required|string|max:255',
+        'email' => 'required|email|unique:students,email',
+        'filiere' => 'required|string|max:255',
+        'niveau' => 'required|string|max:255'
     ];
 
     /**

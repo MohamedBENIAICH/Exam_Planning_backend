@@ -11,6 +11,7 @@ use App\Http\Controllers\FormationController;
 use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExamClassroomAssignmentController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ExamNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -166,3 +167,5 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
         ], 500);
     }
 });
+
+Route::post('/exams/{exam}/send-invitations', [ExamNotificationController::class, 'sendNotifications']);
