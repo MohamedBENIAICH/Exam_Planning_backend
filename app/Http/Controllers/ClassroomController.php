@@ -515,4 +515,46 @@ class ClassroomController extends Controller
             ], 500);
         }
     }
+
+    public function availableCount(Request $request)
+    {
+        $date = $request->input('date_examen');
+        $heureDebut = $request->input('heure_debut');
+        $heureFin = $request->input('heure_fin');
+
+        $sallesOccupees = ClassroomExamSchedule::where('date_examen', $date)
+            ->where(function ($query) use ($heureDebut, $heureFin) {
+                $query->where(function ($q) use ($heureDebut, $heureFin) {
+                    $q->where('heure_debut', '<=', $heureDebut)
+                        ->where('heure_fin', '>', $heureDebut);
+                })->orWhere(function ($q) use ($heureDebut, $heureFin) {
+                    $q->where('heure_debut', '<', $heureFin)
+                        ->where('heure_fin', '>=', $heureFin);
+                })->orWhere(function ($q) use ($heureDebut, $heureFin) {
+                    $q->where('heure_debut', '>=', $heureDebut)
+                        ->where('heure_fin', '<=', $heureFin);
+                });
+            })
+            ->pluck('classroom_id');
+
+        $sallesDisponibles = Classroom::whereNotIn('id', $sallesOccupees)->count();
+
+        return response()->json(['count' => $sallesDisponibles]);
+    }
+
+    public function updateDisponibilite(Request $request, $id)
+    {
+        $salle = Classroom::findOrFail($id);
+
+        $validated = $request->validate([
+            'disponible' => 'required|boolean'
+        ]);
+
+        $salle->update(['disponible' => $validated['disponible']]);
+
+        return response()->json([
+            'message' => 'Disponibilité mise à jour avec succès',
+            'salle' => $salle
+        ]);
+    }
 }

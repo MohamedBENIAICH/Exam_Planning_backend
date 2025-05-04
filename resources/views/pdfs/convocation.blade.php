@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
             color: #333;
@@ -24,60 +24,47 @@
             height: 29.7cm;
             margin: 0 auto;
             background-color: white;
-            padding: 1.5cm 1.5cm;
+            padding: 2cm 1.5cm;
             box-sizing: border-box;
             position: relative;
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #1a3c5e;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .logo-left {
-            width: 80px;
-            height: 80px;
-            align-self: flex-start;
+        .logo {
+            max-width: 300px;
+            margin: 0 auto 15px;
         }
 
-        .logo-right {
-            width: 80px;
-            height: 80px;
-            align-self: flex-end;
-        }
-
-        .logo-left img,
-        .logo-right img {
+        .logo img {
             max-width: 100%;
-            max-height: 100%;
+            height: auto;
+        }
+
+        .date {
+            text-align: left;
+            font-size: 13px;
+            margin-bottom: 20px;
         }
 
         .title-section {
             text-align: center;
-            padding: 5px 0;
-            margin: 10px 0;
+            margin: 20px 0;
         }
 
         h1 {
-            color: #1a3c5e;
+            color: #000;
             margin: 0;
             font-size: 24px;
-            text-transform: uppercase;
             font-weight: bold;
         }
 
-        .title-section:after {
-            content: '';
-            display: block;
-            height: 3px;
-            width: 80px;
-            background: #d4af37;
-            margin: 8px auto 0;
+        h2 {
+            font-size: 20px;
+            margin: 10px 0;
         }
 
         .content {
@@ -85,86 +72,77 @@
             line-height: 1.4;
         }
 
-        p {
-            margin-bottom: 10px;
+        .student-info {
+            margin: 25px 0;
+        }
+
+        .info-row {
+            margin-bottom: 8px;
             font-size: 14px;
         }
 
-        h3 {
-            margin: 5px 0;
-            font-size: 16px;
-            color: #1a3c5e;
-        }
-
-        .exam-details {
-            background-color: #f5f9ff;
-            border-left: 4px solid #1a3c5e;
-            padding: 8px 12px;
-            margin: 12px 0;
-        }
-
-        .student-details {
-            background-color: #f0f7f0;
-            border-left: 4px solid #2e7d32;
-            padding: 8px 12px;
-            margin: 12px 0;
+        .info-row strong {
+            display: inline-block;
+            width: 120px;
         }
 
         .qr-code {
-            text-align: center;
-            margin: 15px 0;
-            padding: 8px;
-            border: 1px dashed #ccc;
-            background-color: #f9f9f9;
+            position: absolute;
+            right: 2cm;
+            top: 12cm;
         }
 
         .qr-code img {
+            width: 100px;
+            height: auto;
+        }
+
+        .exam-schedule {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .exam-schedule th,
+        .exam-schedule td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .exam-schedule th {
+            background-color: #f2f2f2;
+        }
+
+        .exam-schedule .green {
+            background-color: #a0daa9;
+        }
+
+        .exam-schedule .blue {
+            background-color: #a0c4da;
+        }
+
+        .exam-schedule .yellow {
+            background-color: #dacea0;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .stamp {
+            position: absolute;
+            right: 2cm;
+            bottom: 5cm;
             width: 120px;
             height: auto;
         }
 
-        .qr-code p {
-            margin: 5px 0 0;
-            font-size: 12px;
-        }
-
-        .footer {
-            position: absolute;
-            bottom: 1.5cm;
-            left: 1.5cm;
-            right: 1.5cm;
-            text-align: center;
-            font-size: 11px;
-            color: #666;
-            padding-top: 8px;
-            border-top: 1px solid #eee;
-        }
-
-        .important-note {
-            font-weight: bold;
-            color: #c62828;
-        }
-
-        .details-item {
-            display: flex;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .details-label {
-            font-weight: bold;
-            width: 110px;
-            color: #555;
-        }
-
-        .details-value {
-            flex: 1;
-        }
-
-        .signature {
-            text-align: right;
-            font-size: 13px;
-            margin: 10px 0;
+        .stamp img {
+            max-width: 100%;
+            height: auto;
         }
     </style>
 </head>
@@ -172,81 +150,76 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo-left">
-                <img src="{{ public_path('images/uca.jpeg') }}" alt="Logo de l'université">
-            </div>
-            <div class="logo-right">
+            <div class="logo">
                 <img src="{{ public_path('images/logofst.jpeg') }}" alt="Logo de la faculté">
             </div>
         </div>
 
+        <div class="date">
+            Marrakech, le {{ date('d/m/Y') }}
+        </div>
+
         <div class="title-section">
-            <h1>Convocation à l'examen</h1>
+            <h1>Convocation</h1>
+            <h2>Aux 2<sup>èmes</sup> contrôles</h2>
+            <h2>Session de {{ $exam['session'] }} {{ $exam['year'] }}</h2>
         </div>
 
         <div class="content">
-            <p>Cher(e) étudiant(e),</p>
-
-            <p>Nous avons le plaisir de vous convoquer à l'examen dont les détails sont mentionnés ci-dessous. Veuillez
-                vous présenter à l'heure indiquée muni(e) de cette convocation et de votre carte d'étudiant.</p>
-
-            <div class="exam-details">
-                <h3>Détails de l'examen</h3>
-                <div class="details-item">
-                    <div class="details-label">Module :</div>
-                    <div class="details-value">{{ $exam['name'] }}</div>
+            <div class="student-info">
+                <div class="info-row">
+                    <strong>Nom :</strong> {{ $student->prenom }}
                 </div>
-                <div class="details-item">
-                    <div class="details-label">Date :</div>
-                    <div class="details-value">{{ $exam['date'] }}</div>
+                <div class="info-row">
+                    <strong>Prénom :</strong> {{ $student->nom }}
                 </div>
-                <div class="details-item">
-                    <div class="details-label">Heure de début :</div>
-                    <div class="details-value">{{ $exam['heure_debut'] }}</div>
+                <div class="info-row">
+                    <strong>Code Apogée :</strong> {{ $student->cne ?? ($student->numero_etudiant ?? '') }}
                 </div>
-                <div class="details-item">
-                    <div class="details-label">Heure de fin :</div>
-                    <div class="details-value">{{ $exam['heure_fin'] }}</div>
-                </div>
-                <div class="details-item">
-                    <div class="details-label">Salle :</div>
-                    <div class="details-value">{{ $exam['salle'] }}</div>
+                <div class="info-row">
+                    <strong>Local :</strong> {{ $exam['salle'] }}
                 </div>
             </div>
 
-            <div class="student-details">
-                <h3>Informations de l'étudiant</h3>
-                <div class="details-item">
-                    <div class="details-label">Code Apogée :</div>
-                    <div class="details-value">
-                        {{ $student->cne ?? ($student->numero_etudiant ?? 'Non renseigné') }}
-                    </div>
-                </div>
-                <div class="details-item">
-                    <div class="details-label">Nom :</div>
-                    <div class="details-value">{{ $student->prenom }}</div>
-                </div>
-                <div class="details-item">
-                    <div class="details-label">Prénom :</div>
-                    <div class="details-value">{{ $student->nom }}</div>
-                </div>
+            <div class="qr-code">
+                <img src="{{ public_path('storage/qrcodes/' . basename($qrCodePath)) }}" alt="QR Code">
             </div>
-        </div>
 
-        <div class="qr-code">
-            <img src="{{ public_path('storage/qrcodes/' . basename($qrCodePath)) }}" alt="QR Code">
-            <p>Veuillez scanner ce QR code à l'entrée de la salle d'examen</p>
-        </div>
+            <p>Vous êtes convoqué(e) aux 2èmes contrôles de la Session de {{ $exam['session'] }} {{ $exam['year'] }},
+                dont le programme est arrêté comme suit :</p>
 
-        <div class="signature">
-            <p>Le service des examens</p>
-        </div>
+            <table class="exam-schedule">
+                <thead>
+                    <tr>
+                        <th colspan="5">Semestre {{ $exam['semestre'] }}</th>
+                    </tr>
+                    <tr>
+                        <th>{{ $exam['month'] }} {{ $exam['year'] }}</th>
+                        <th>Modules</th>
+                        <th>Durée</th>
+                        <th>Horaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($examSchedule as $schedule)
+                        <tr>
+                            <td>{{ $schedule['jour'] }}</td>
+                            <td class="{{ $schedule['color'] }}">{{ $schedule['module'] }}</td>
+                            <td>{{ $schedule['duree'] }}</td>
+                            <td>{{ $schedule['horaire'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
 
-        <div class="footer">
-            <p class="important-note">Veuillez vous présenter 20 minutes avant le début de l'examen.</p>
-            <p>Présentez cette convocation imprimée ainsi que votre carte d'étudiant le jour de l'examen.</p>
-            <p>L'usage des téléphones portables et autres appareils électroniques est strictement interdit durant
-                l'examen.</p>
+            <div class="footer-text">
+                <p>Vous êtes tenu(e) de vous présenter au local indiqué une demi-heure avant chaque épreuve, muni(e) de
+                    la présente convocation, de votre carte d'étudiant et de votre pièce d'identité.</p>
+            </div>
+
+            <div class="stamp">
+                <img src="{{ public_path('images/stamp.png') }}" alt="Tampon officiel">
+            </div>
         </div>
     </div>
 </body>

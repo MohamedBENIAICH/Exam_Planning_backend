@@ -23,7 +23,12 @@ class ExamNotificationService
     {
         $exam->load('classrooms');
         $students = $exam->students;
-        Log::info('Début de l\'envoi des notifications', ['exam_id' => $exam->id, 'students_count' => count($students)]);
+        Log::info('Début de l\'envoi des notifications', [
+            'exam_id' => $exam->id,
+            'students_count' => count($students),
+            'module' => $exam->module,
+            'classrooms' => $exam->classrooms->pluck('nom')
+        ]);
 
         foreach ($students as $student) {
             try {
@@ -126,6 +131,23 @@ class ExamNotificationService
             throw new \Exception("Les données de l'étudiant sont invalides.");
         }
 
+        // Calcul de la durée de l'examen
+        $duree = '2h'; // Valeur par défaut
+        if ($exam->heure_debut && $exam->heure_fin) {
+            try {
+                $debut = \Carbon\Carbon::parse($exam->heure_debut);
+                $fin = \Carbon\Carbon::parse($exam->heure_fin);
+                $diff = $debut->diff($fin);
+                $duree = $diff->h . 'h' . ($diff->i > 0 ? $diff->i . 'min' : '');
+            } catch (\Exception $e) {
+                Log::error('Erreur lors du calcul de la durée', [
+                    'error' => $e->getMessage(),
+                    'heure_debut' => $exam->heure_debut,
+                    'heure_fin' => $exam->heure_fin
+                ]);
+            }
+        }
+
         $data = [
             'student' => $student,
             'exam' => [
@@ -133,10 +155,35 @@ class ExamNotificationService
                 'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                 'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                 'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
-                'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée'
+                'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée',
+                'session' => 'Printemps', // Session par défaut
+                'year' => $exam->date_examen ? $exam->date_examen->format('Y') : date('Y'),
+                'month' => $exam->date_examen ? $exam->date_examen->format('F') : date('F'),
+                'semestre' => $exam->semestre ?? 'Non spécifié'
+            ],
+            'examSchedule' => [
+                [
+                    'jour' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
+                    'module' => $exam->module ?? 'Module non spécifié',
+                    'duree' => $duree,
+                    'horaire' => $exam->heure_debut ? $exam->heure_debut->format('H:i') . ' - ' . $exam->heure_fin->format('H:i') : 'Horaire non spécifié',
+                    'color' => 'green'
+                ]
             ],
             'qrCodePath' => asset('storage/' . $student->qr_code)
         ];
+
+        Log::info('Données pour le PDF', [
+            'student' => [
+                'id' => $student->id,
+                'nom' => $student->nom,
+                'prenom' => $student->prenom,
+                'cne' => $student->cne,
+                'numero_etudiant' => $student->numero_etudiant,
+                'qr_code' => $student->qr_code
+            ],
+            'exam' => $data['exam']
+        ]);
 
         // Générer le PDF
         $pdf = PDF::loadView('pdfs.convocation', $data);
