@@ -218,7 +218,7 @@
             </div>
 
             <div class="stamp">
-                <img src="{{ public_path('images/stamp.png') }}" alt="Tampon officiel">
+                <img src="{{ public_path('images/cachet.png') }}" alt="Tampon officiel">
             </div>
         </div>
     </div>

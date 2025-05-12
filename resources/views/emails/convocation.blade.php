@@ -19,10 +19,6 @@
             margin-bottom: 30px;
         }
 
-        .qr-code {
-            text-align: center;
-            margin: 20px 0;
-        }
 
         .footer {
             margin-top: 50px;
@@ -57,13 +53,9 @@
             <li><strong>Prénom :</strong> {{ $student->prenom }}</li>
         </ul>
     </div>
-
-    <div class="qr-code">
-        <img src="{{ $qrCodePath }}" alt="QR Code" style="width: 200px;">
-    </div>
-
     <div class="footer">
-        <p>Veuillez présenter cette convocation et votre carte d'étudiant le jour de l'examen.</p>
+        <p>Vous trouverez ci-joint le pdf contenant votre convocation.Veuillez présenter cette convocation et votre
+            carte d'étudiant le jour de l'examen.</p>
         <p>Merci de votre compréhension.</p>
     </div>
 </body>

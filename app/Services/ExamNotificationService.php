@@ -41,9 +41,10 @@ class ExamNotificationService
                 // Vérifier et générer le QR code si nécessaire
                 if (empty($student->qr_code) || !Storage::exists('public/' . $student->qr_code)) {
                     $qrData = [
-                        'cne' => $student->cne ?? $student->numero_etudiant ?? '',
-                        'nom' => $student->nom ?? '',
-                        'prenom' => $student->prenom ?? ''
+                        'nom' => $student->prenom ?? '',
+                        'prenom' => $student->nom ?? '',
+                        'codeApogee' => $student->cne ?? $student->numero_etudiant ?? '',
+                        'cne' => $student->cne ?? ''
                     ];
 
                     // Générer le QR code
