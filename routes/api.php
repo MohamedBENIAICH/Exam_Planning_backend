@@ -40,6 +40,8 @@ Route::prefix('exams')->group(function () {
     Route::post('/', [ExamController::class, 'store']);
     Route::put('/{id}', [ExamController::class, 'update']);
     Route::delete('/{id}', [ExamController::class, 'destroy']);
+    Route::get('/upcoming', [ExamController::class, 'getUpcomingExams']);
+    Route::get('/passed', [ExamController::class, 'getPassedExams']);
 
     // Exam-Classroom Assignment
     Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);

@@ -734,6 +734,769 @@
                 }
             }
         },
+        "/api/exams": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get all exams",
+                "operationId": "a54e05ebd2b23c9f2329a2a483272bc3",
+                "responses": {
+                    "200": {
+                        "description": "List of exams retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "formation": {
+                                                        "type": "string"
+                                                    },
+                                                    "filiere": {
+                                                        "type": "string"
+                                                    },
+                                                    "module": {
+                                                        "type": "string"
+                                                    },
+                                                    "semestre": {
+                                                        "type": "string"
+                                                    },
+                                                    "date_examen": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "heure_debut": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "heure_fin": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "locaux": {
+                                                        "type": "string"
+                                                    },
+                                                    "superviseurs": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Create a new exam",
+                "operationId": "fa2de658c3313746441306155597563e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "formation",
+                                    "filiere",
+                                    "module",
+                                    "semestre",
+                                    "date_examen",
+                                    "heure_debut",
+                                    "heure_fin",
+                                    "locaux",
+                                    "superviseurs"
+                                ],
+                                "properties": {
+                                    "formation": {
+                                        "type": "string"
+                                    },
+                                    "filiere": {
+                                        "type": "string"
+                                    },
+                                    "module": {
+                                        "type": "string"
+                                    },
+                                    "semestre": {
+                                        "type": "string"
+                                    },
+                                    "date_examen": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "heure_debut": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "heure_fin": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "locaux": {
+                                        "type": "string"
+                                    },
+                                    "superviseurs": {
+                                        "type": "string"
+                                    },
+                                    "classroom_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "students": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "studentId": {
+                                                    "type": "string"
+                                                },
+                                                "firstName": {
+                                                    "type": "string"
+                                                },
+                                                "lastName": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email"
+                                                },
+                                                "program": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Exam created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "formation": {
+                                                    "type": "string"
+                                                },
+                                                "filiere": {
+                                                    "type": "string"
+                                                },
+                                                "module": {
+                                                    "type": "string"
+                                                },
+                                                "semestre": {
+                                                    "type": "string"
+                                                },
+                                                "date_examen": {
+                                                    "type": "string",
+                                                    "format": "date"
+                                                },
+                                                "heure_debut": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "heure_fin": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "locaux": {
+                                                    "type": "string"
+                                                },
+                                                "superviseurs": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/exams/{id}": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get a specific exam",
+                "operationId": "5762ee3221f12d62693826bab5e66e2a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exam ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exam retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "formation": {
+                                                    "type": "string"
+                                                },
+                                                "filiere": {
+                                                    "type": "string"
+                                                },
+                                                "module": {
+                                                    "type": "string"
+                                                },
+                                                "semestre": {
+                                                    "type": "string"
+                                                },
+                                                "date_examen": {
+                                                    "type": "string",
+                                                    "format": "date"
+                                                },
+                                                "heure_debut": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "heure_fin": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "locaux": {
+                                                    "type": "string"
+                                                },
+                                                "superviseurs": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Update an existing exam",
+                "operationId": "d8b5e491c38a96d9bd5f9787cff42ab1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exam ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "cycle": {
+                                        "type": "string"
+                                    },
+                                    "filiere": {
+                                        "type": "string"
+                                    },
+                                    "module": {
+                                        "type": "string"
+                                    },
+                                    "date_examen": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "heure_debut": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "heure_fin": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "locaux": {
+                                        "type": "string"
+                                    },
+                                    "superviseurs": {
+                                        "type": "string"
+                                    },
+                                    "classroom_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "superviseur_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "students": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "studentId": {
+                                                    "type": "string"
+                                                },
+                                                "firstName": {
+                                                    "type": "string"
+                                                },
+                                                "lastName": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email"
+                                                },
+                                                "program": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Exam updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "formation": {
+                                                    "type": "string"
+                                                },
+                                                "filiere": {
+                                                    "type": "string"
+                                                },
+                                                "module": {
+                                                    "type": "string"
+                                                },
+                                                "semestre": {
+                                                    "type": "string"
+                                                },
+                                                "date_examen": {
+                                                    "type": "string",
+                                                    "format": "date"
+                                                },
+                                                "heure_debut": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "heure_fin": {
+                                                    "type": "string",
+                                                    "format": "time"
+                                                },
+                                                "locaux": {
+                                                    "type": "string"
+                                                },
+                                                "superviseurs": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Delete an exam",
+                "operationId": "61fff9ddd42647f37ba3b48f3c0ac233",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exam ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exam deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/exams/count": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get total number of exams",
+                "operationId": "6124b1eb3a6626f6b0adecdcdc243b91",
+                "responses": {
+                    "200": {
+                        "description": "Count retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "count": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/exams/latest": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get the last 5 exams created",
+                "operationId": "e3fd0991c88240f1777022edd86b5050",
+                "responses": {
+                    "200": {
+                        "description": "Latest exams retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "formation": {
+                                                        "type": "string"
+                                                    },
+                                                    "filiere": {
+                                                        "type": "string"
+                                                    },
+                                                    "module": {
+                                                        "type": "string"
+                                                    },
+                                                    "semestre": {
+                                                        "type": "string"
+                                                    },
+                                                    "date_examen": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "heure_debut": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "heure_fin": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "locaux": {
+                                                        "type": "string"
+                                                    },
+                                                    "superviseurs": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/exams/upcoming": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get all upcoming exams",
+                "operationId": "ade127744197536c820aa8415f7d77a8",
+                "responses": {
+                    "200": {
+                        "description": "List of upcoming exams retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "formation": {
+                                                        "type": "string"
+                                                    },
+                                                    "filiere": {
+                                                        "type": "string"
+                                                    },
+                                                    "module": {
+                                                        "type": "string"
+                                                    },
+                                                    "semestre": {
+                                                        "type": "string"
+                                                    },
+                                                    "date_examen": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "heure_debut": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "heure_fin": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "locaux": {
+                                                        "type": "string"
+                                                    },
+                                                    "superviseurs": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/exams/passed": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get all passed exams",
+                "operationId": "ca37e71719f60bc1469a6a8f4554386f",
+                "responses": {
+                    "200": {
+                        "description": "List of passed exams retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "formation": {
+                                                        "type": "string"
+                                                    },
+                                                    "filiere": {
+                                                        "type": "string"
+                                                    },
+                                                    "module": {
+                                                        "type": "string"
+                                                    },
+                                                    "semestre": {
+                                                        "type": "string"
+                                                    },
+                                                    "date_examen": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "heure_debut": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "heure_fin": {
+                                                        "type": "string",
+                                                        "format": "time"
+                                                    },
+                                                    "locaux": {
+                                                        "type": "string"
+                                                    },
+                                                    "superviseurs": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "count": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
         "/api/modules/{id}/name": {
             "get": {
                 "tags": [
@@ -1114,6 +1877,10 @@
         {
             "name": "Departements",
             "description": "API Endpoints for managing departments"
+        },
+        {
+            "name": "Exams",
+            "description": "API Endpoints for managing exams"
         },
         {
             "name": "Modules",

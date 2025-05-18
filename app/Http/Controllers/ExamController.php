@@ -12,12 +12,47 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @OA\Tag(
+ *     name="Exams",
+ *     description="API Endpoints for managing exams"
+ * )
+ */
 class ExamController extends Controller
 {
     /**
-     * Display a listing of the exams.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/exams",
+     *     summary="Get all exams",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of exams retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="formation", type="string"),
+     *                     @OA\Property(property="filiere", type="string"),
+     *                     @OA\Property(property="module", type="string"),
+     *                     @OA\Property(property="semestre", type="string"),
+     *                     @OA\Property(property="date_examen", type="string", format="date"),
+     *                     @OA\Property(property="heure_debut", type="string", format="time"),
+     *                     @OA\Property(property="heure_fin", type="string", format="time"),
+     *                     @OA\Property(property="locaux", type="string"),
+     *                     @OA\Property(property="superviseurs", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function index()
     {
@@ -39,10 +74,47 @@ class ExamController extends Controller
     }
 
     /**
-     * Display the specified exam with its students.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/exams/{id}",
+     *     summary="Get a specific exam",
+     *     tags={"Exams"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Exam ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="formation", type="string"),
+     *                 @OA\Property(property="filiere", type="string"),
+     *                 @OA\Property(property="module", type="string"),
+     *                 @OA\Property(property="semestre", type="string"),
+     *                 @OA\Property(property="date_examen", type="string", format="date"),
+     *                 @OA\Property(property="heure_debut", type="string", format="time"),
+     *                 @OA\Property(property="heure_fin", type="string", format="time"),
+     *                 @OA\Property(property="locaux", type="string"),
+     *                 @OA\Property(property="superviseurs", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function show($id)
     {
@@ -63,9 +135,23 @@ class ExamController extends Controller
     }
 
     /**
-     * Get the total number of exams in the database.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/exams/count",
+     *     summary="Get total number of exams",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Count retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="count", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function count()
     {
@@ -86,10 +172,72 @@ class ExamController extends Controller
     }
 
     /**
-     * Store a newly created exam in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/exams",
+     *     summary="Create a new exam",
+     *     tags={"Exams"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"formation", "filiere", "module", "semestre", "date_examen", "heure_debut", "heure_fin", "locaux", "superviseurs"},
+     *             @OA\Property(property="formation", type="string"),
+     *             @OA\Property(property="filiere", type="string"),
+     *             @OA\Property(property="module", type="string"),
+     *             @OA\Property(property="semestre", type="string"),
+     *             @OA\Property(property="date_examen", type="string", format="date"),
+     *             @OA\Property(property="heure_debut", type="string", format="time"),
+     *             @OA\Property(property="heure_fin", type="string", format="time"),
+     *             @OA\Property(property="locaux", type="string"),
+     *             @OA\Property(property="superviseurs", type="string"),
+     *             @OA\Property(
+     *                 property="classroom_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer")
+     *             ),
+     *             @OA\Property(
+     *                 property="students",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="studentId", type="string"),
+     *                     @OA\Property(property="firstName", type="string"),
+     *                     @OA\Property(property="lastName", type="string"),
+     *                     @OA\Property(property="email", type="string", format="email"),
+     *                     @OA\Property(property="program", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Exam created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="formation", type="string"),
+     *                 @OA\Property(property="filiere", type="string"),
+     *                 @OA\Property(property="module", type="string"),
+     *                 @OA\Property(property="semestre", type="string"),
+     *                 @OA\Property(property="date_examen", type="string", format="date"),
+     *                 @OA\Property(property="heure_debut", type="string", format="time"),
+     *                 @OA\Property(property="heure_fin", type="string", format="time"),
+     *                 @OA\Property(property="locaux", type="string"),
+     *                 @OA\Property(property="superviseurs", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function store(Request $request)
     {
@@ -223,10 +371,34 @@ class ExamController extends Controller
     }
 
     /**
-     * Remove the specified exam from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Delete(
+     *     path="/api/exams/{id}",
+     *     summary="Delete an exam",
+     *     tags={"Exams"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Exam ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function destroy($id)
     {
@@ -250,9 +422,38 @@ class ExamController extends Controller
     }
 
     /**
-     * Get the last 5 exams created.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/exams/latest",
+     *     summary="Get the last 5 exams created",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Latest exams retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="formation", type="string"),
+     *                     @OA\Property(property="filiere", type="string"),
+     *                     @OA\Property(property="module", type="string"),
+     *                     @OA\Property(property="semestre", type="string"),
+     *                     @OA\Property(property="date_examen", type="string", format="date"),
+     *                     @OA\Property(property="heure_debut", type="string", format="time"),
+     *                     @OA\Property(property="heure_fin", type="string", format="time"),
+     *                     @OA\Property(property="locaux", type="string"),
+     *                     @OA\Property(property="superviseurs", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function getLatestExams()
     {
@@ -276,11 +477,86 @@ class ExamController extends Controller
     }
 
     /**
-     * Update the specified exam in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Put(
+     *     path="/api/exams/{id}",
+     *     summary="Update an existing exam",
+     *     tags={"Exams"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Exam ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="cycle", type="string"),
+     *             @OA\Property(property="filiere", type="string"),
+     *             @OA\Property(property="module", type="string"),
+     *             @OA\Property(property="date_examen", type="string", format="date"),
+     *             @OA\Property(property="heure_debut", type="string", format="time"),
+     *             @OA\Property(property="heure_fin", type="string", format="time"),
+     *             @OA\Property(property="locaux", type="string"),
+     *             @OA\Property(property="superviseurs", type="string"),
+     *             @OA\Property(
+     *                 property="classroom_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer")
+     *             ),
+     *             @OA\Property(
+     *                 property="superviseur_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer")
+     *             ),
+     *             @OA\Property(
+     *                 property="students",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="studentId", type="string"),
+     *                     @OA\Property(property="firstName", type="string"),
+     *                     @OA\Property(property="lastName", type="string"),
+     *                     @OA\Property(property="email", type="string", format="email"),
+     *                     @OA\Property(property="program", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="formation", type="string"),
+     *                 @OA\Property(property="filiere", type="string"),
+     *                 @OA\Property(property="module", type="string"),
+     *                 @OA\Property(property="semestre", type="string"),
+     *                 @OA\Property(property="date_examen", type="string", format="date"),
+     *                 @OA\Property(property="heure_debut", type="string", format="time"),
+     *                 @OA\Property(property="heure_fin", type="string", format="time"),
+     *                 @OA\Property(property="locaux", type="string"),
+     *                 @OA\Property(property="superviseurs", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function update(Request $request, $id)
     {
@@ -469,6 +745,119 @@ class ExamController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update exam',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/exams/upcoming",
+     *     summary="Get all upcoming exams",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of upcoming exams retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="formation", type="string"),
+     *                     @OA\Property(property="filiere", type="string"),
+     *                     @OA\Property(property="module", type="string"),
+     *                     @OA\Property(property="semestre", type="string"),
+     *                     @OA\Property(property="date_examen", type="string", format="date"),
+     *                     @OA\Property(property="heure_debut", type="string", format="time"),
+     *                     @OA\Property(property="heure_fin", type="string", format="time"),
+     *                     @OA\Property(property="locaux", type="string"),
+     *                     @OA\Property(property="superviseurs", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
+     */
+    public function getUpcomingExams()
+    {
+        try {
+            $today = now()->toDateString();
+            $exams = Exam::where('date_examen', '>=', $today)
+                ->orderBy('date_examen', 'asc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $exams
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve upcoming exams',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/exams/passed",
+     *     summary="Get all passed exams",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of passed exams retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="formation", type="string"),
+     *                     @OA\Property(property="filiere", type="string"),
+     *                     @OA\Property(property="module", type="string"),
+     *                     @OA\Property(property="semestre", type="string"),
+     *                     @OA\Property(property="date_examen", type="string", format="date"),
+     *                     @OA\Property(property="heure_debut", type="string", format="time"),
+     *                     @OA\Property(property="heure_fin", type="string", format="time"),
+     *                     @OA\Property(property="locaux", type="string"),
+     *                     @OA\Property(property="superviseurs", type="string")
+     *                 )
+     *             ),
+     *             @OA\Property(property="count", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
+     */
+    public function getPassedExams()
+    {
+        try {
+            $today = now()->toDateString();
+            $exams = Exam::where('date_examen', '<', $today)
+                ->orderBy('date_examen', 'desc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $exams,
+                'count' => $exams->count()
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in getPassedExams: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve passed exams',
                 'error' => $e->getMessage()
             ], 500);
         }
