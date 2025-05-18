@@ -6,12 +6,37 @@ use App\Models\Student;
 use App\Models\Exam;
 use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="Students",
+ *     description="API Endpoints for managing students"
+ * )
+ */
 class StudentController extends Controller
 {
     /**
-     * Display a listing of the students.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/students",
+     *     summary="Get all students",
+     *     tags={"Students"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of students",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="nom", type="string"),
+     *                 @OA\Property(property="prenom", type="string"),
+     *                 @OA\Property(property="numero_etudiant", type="string"),
+     *                 @OA\Property(property="email", type="string"),
+     *                 @OA\Property(property="filiere", type="string"),
+     *                 @OA\Property(property="niveau", type="string")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function index()
     {
@@ -32,9 +57,19 @@ class StudentController extends Controller
     }
 
     /**
-     * Get the total number of students in the database.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/students/count",
+     *     summary="Get total number of students",
+     *     tags={"Students"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total number of students",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="count", type="integer")
+     *         )
+     *     )
+     * )
      */
     public function count()
     {
@@ -55,10 +90,33 @@ class StudentController extends Controller
     }
 
     /**
-     * Get students by exam ID.
-     *
-     * @param  int  $examId
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/students/by-exam/{examId}",
+     *     summary="Get students by exam ID",
+     *     tags={"Students"},
+     *     @OA\Parameter(
+     *         name="examId",
+     *         in="path",
+     *         required=true,
+     *         description="Exam ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of students for the exam",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="nom", type="string"),
+     *                 @OA\Property(property="prenom", type="string"),
+     *                 @OA\Property(property="numero_etudiant", type="string"),
+     *                 @OA\Property(property="email", type="string")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function getStudentsByExamId($examId)
     {

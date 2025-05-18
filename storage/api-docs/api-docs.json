@@ -1,0 +1,1135 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "FST Digital API Documentation",
+        "description": "API documentation for FST Digital Backend",
+        "contact": {
+            "email": "admin@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/classrooms": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get all classrooms",
+                "operationId": "2f72f5470de53ee3c1b98260a19b95ac",
+                "responses": {
+                    "200": {
+                        "description": "List of classrooms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "nom_du_local": {
+                                                        "type": "string",
+                                                        "example": "Amphi A"
+                                                    },
+                                                    "departement": {
+                                                        "type": "string",
+                                                        "example": "Informatique"
+                                                    },
+                                                    "capacite": {
+                                                        "type": "integer",
+                                                        "example": 100
+                                                    },
+                                                    "liste_des_equipements": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve classrooms"
+                                        },
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Create a new classroom",
+                "operationId": "8e2ce7d8f98adf8e177ee807f293c2f3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nom_du_local",
+                                    "departement",
+                                    "capacite"
+                                ],
+                                "properties": {
+                                    "nom_du_local": {
+                                        "type": "string",
+                                        "example": "Amphi A"
+                                    },
+                                    "departement": {
+                                        "type": "string",
+                                        "example": "Informatique"
+                                    },
+                                    "capacite": {
+                                        "type": "integer",
+                                        "example": 100
+                                    },
+                                    "liste_des_equipements": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Classroom created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/count": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get total number of classrooms",
+                "operationId": "e26ff563d12e14e99d5ca42f468f8f49",
+                "responses": {
+                    "200": {
+                        "description": "Total count of classrooms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "count": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/{id}": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get a specific classroom",
+                "operationId": "d1dffef915059d675ed37f532aef10f3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Classroom ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Classroom details"
+                    },
+                    "404": {
+                        "description": "Classroom not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Update a classroom",
+                "operationId": "a4c88d898890ebf48d548695b3eb0718",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Classroom ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nom_du_local": {
+                                        "type": "string",
+                                        "example": "Amphi A"
+                                    },
+                                    "departement": {
+                                        "type": "string",
+                                        "example": "Informatique"
+                                    },
+                                    "capacite": {
+                                        "type": "integer",
+                                        "example": 100
+                                    },
+                                    "liste_des_equipements": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Classroom updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Delete a classroom",
+                "operationId": "6a60bd3281c5568275ae795e00ba0e0a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Classroom ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Classroom deleted successfully"
+                    },
+                    "404": {
+                        "description": "Classroom not found"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/available": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get all available classrooms",
+                "operationId": "8252ace68c768dcb1bc61838ebcc6bb8",
+                "responses": {
+                    "200": {
+                        "description": "List of available classrooms"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/schedule-exam": {
+            "post": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Schedule an exam in a classroom",
+                "operationId": "4cd12f3177b55c445fdca685bc54890e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "classroom_id",
+                                    "exam_id",
+                                    "date_examen",
+                                    "heure_debut",
+                                    "heure_fin"
+                                ],
+                                "properties": {
+                                    "classroom_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "exam_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "date_examen": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-03-20"
+                                    },
+                                    "heure_debut": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "09:00"
+                                    },
+                                    "heure_fin": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "11:00"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Exam scheduled successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "409": {
+                        "description": "Classroom not available for the specified time slot"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/name/{classroomName}": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get a classroom by its name",
+                "operationId": "45180371fb67907c11ede46595b1f146",
+                "parameters": [
+                    {
+                        "name": "classroomName",
+                        "in": "path",
+                        "description": "Name of the classroom",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Classroom details"
+                    },
+                    "404": {
+                        "description": "Classroom not found"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/by-datetime": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get classrooms by date, time range and department",
+                "operationId": "cc99beb5f23ae38f9099a0ccaf72370c",
+                "parameters": [
+                    {
+                        "name": "date_examen",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-03-20"
+                        }
+                    },
+                    {
+                        "name": "heure_debut",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "time",
+                            "example": "09:00"
+                        }
+                    },
+                    {
+                        "name": "heure_fin",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "time",
+                            "example": "11:00"
+                        }
+                    },
+                    {
+                        "name": "departement",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "Informatique"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of scheduled classroom IDs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "scheduled_classroom_ids": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation failed"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "departement": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The departement field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/classrooms/not-in-list": {
+            "post": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get classrooms not in the provided list",
+                "operationId": "02af1686cea9163716e1aeb22da500c2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "classroom_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "List of classrooms not in the provided list"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/available-count": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get count of available classrooms for a time slot",
+                "operationId": "8d3ff0ccbc843e5c12deb83ba3b8dc0e",
+                "parameters": [
+                    {
+                        "name": "date_examen",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "heure_debut",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "time"
+                        }
+                    },
+                    {
+                        "name": "heure_fin",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Count of available classrooms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "count": {
+                                            "type": "integer",
+                                            "example": 5
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/classrooms/{id}/disponibilite": {
+            "put": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Update classroom availability",
+                "operationId": "a339cd5bc0fc03097e9e86695bef790d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Classroom ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "disponible"
+                                ],
+                                "properties": {
+                                    "disponible": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Availability updated successfully"
+                    },
+                    "404": {
+                        "description": "Classroom not found"
+                    }
+                }
+            }
+        },
+        "/api/classrooms/amphitheaters": {
+            "get": {
+                "tags": [
+                    "Classrooms"
+                ],
+                "summary": "Get all classrooms that start with 'Amphi' (case-insensitive)",
+                "operationId": "2a21a3ebddc16ae743768d03bb3e8242",
+                "responses": {
+                    "200": {
+                        "description": "List of amphitheaters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "nom_du_local": {
+                                                        "type": "string",
+                                                        "example": "Amphi A"
+                                                    },
+                                                    "departement": {
+                                                        "type": "string",
+                                                        "example": "Informatique"
+                                                    },
+                                                    "capacite": {
+                                                        "type": "integer",
+                                                        "example": 100
+                                                    },
+                                                    "liste_des_equipements": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/departements": {
+            "get": {
+                "tags": [
+                    "Departements"
+                ],
+                "summary": "Get all departments",
+                "operationId": "fdeb8b0868bafbe1d8dbde29d11958e8",
+                "responses": {
+                    "200": {
+                        "description": "List of departments",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id_departement": {
+                                                "type": "integer"
+                                            },
+                                            "nom_departement": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/modules/{id}/name": {
+            "get": {
+                "tags": [
+                    "Modules"
+                ],
+                "summary": "Get module name by ID",
+                "operationId": "1684591213d2f7b22ccd1c11dd2d6025",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Module ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Module name",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "module_intitule": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found"
+                    }
+                }
+            }
+        },
+        "/api/professeurs/by-departement": {
+            "get": {
+                "tags": [
+                    "Professeurs"
+                ],
+                "summary": "Get professors by department",
+                "operationId": "0c3470201533a3cdbbfc073f76e67411",
+                "parameters": [
+                    {
+                        "name": "departement",
+                        "in": "query",
+                        "description": "Department name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of professors in the department",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "nom": {
+                                                "type": "string"
+                                            },
+                                            "prenom": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "departement": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/professeurs/departements": {
+            "get": {
+                "tags": [
+                    "Professeurs"
+                ],
+                "summary": "Get all unique departments",
+                "operationId": "1309d6644859af9d3313f3376f521b44",
+                "responses": {
+                    "200": {
+                        "description": "List of unique departments",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/students": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Get all students",
+                "operationId": "75378cfd9c3d128e0846de3d32b101ec",
+                "responses": {
+                    "200": {
+                        "description": "List of students",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "nom": {
+                                                "type": "string"
+                                            },
+                                            "prenom": {
+                                                "type": "string"
+                                            },
+                                            "numero_etudiant": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "filiere": {
+                                                "type": "string"
+                                            },
+                                            "niveau": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/students/count": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Get total number of students",
+                "operationId": "f2d3181dba82ee8a3ad7abc6bd37385a",
+                "responses": {
+                    "200": {
+                        "description": "Total number of students",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "count": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/students/by-exam/{examId}": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Get students by exam ID",
+                "operationId": "603c9fa35529f32f1a6f327495f3ccd0",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "description": "Exam ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of students for the exam",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "nom": {
+                                                "type": "string"
+                                            },
+                                            "prenom": {
+                                                "type": "string"
+                                            },
+                                            "numero_etudiant": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/superviseurs": {
+            "get": {
+                "tags": [
+                    "Superviseurs"
+                ],
+                "summary": "Get all superviseurs",
+                "operationId": "cb0da26f16855ee04292540676dffd82",
+                "responses": {
+                    "200": {
+                        "description": "List of superviseurs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "nom": {
+                                                "type": "string"
+                                            },
+                                            "prenom": {
+                                                "type": "string"
+                                            },
+                                            "poste": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/superviseurs/by-departement": {
+            "get": {
+                "tags": [
+                    "Superviseurs"
+                ],
+                "summary": "Get superviseurs by department",
+                "operationId": "5aef3b306e8588d7211b8c4e23a9b605",
+                "parameters": [
+                    {
+                        "name": "departement",
+                        "in": "query",
+                        "description": "Department name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of superviseurs in the department",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "nom": {
+                                                        "type": "string"
+                                                    },
+                                                    "prenom": {
+                                                        "type": "string"
+                                                    },
+                                                    "poste": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/superviseurs/departements": {
+            "get": {
+                "tags": [
+                    "Superviseurs"
+                ],
+                "summary": "Get all unique departments",
+                "operationId": "1674754b2acc378ec2a28a18fe3e6fe3",
+                "responses": {
+                    "200": {
+                        "description": "List of unique departments",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Classrooms",
+            "description": "API Endpoints for managing classrooms"
+        },
+        {
+            "name": "Departements",
+            "description": "API Endpoints for managing departments"
+        },
+        {
+            "name": "Modules",
+            "description": "API Endpoints for managing modules"
+        },
+        {
+            "name": "Professeurs",
+            "description": "API Endpoints for managing professors"
+        },
+        {
+            "name": "Students",
+            "description": "API Endpoints for managing students"
+        },
+        {
+            "name": "Superviseurs",
+            "description": "Superviseurs"
+        }
+    ]
+}

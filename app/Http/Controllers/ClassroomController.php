@@ -11,12 +11,47 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @OA\Tag(
+ *     name="Classrooms",
+ *     description="API Endpoints for managing classrooms"
+ * )
+ */
 class ClassroomController extends Controller
 {
     /**
-     * Display a listing of the classrooms.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/classrooms",
+     *     summary="Get all classrooms",
+     *     tags={"Classrooms"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of classrooms",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="nom_du_local", type="string", example="Amphi A"),
+     *                     @OA\Property(property="departement", type="string", example="Informatique"),
+     *                     @OA\Property(property="capacite", type="integer", example=100),
+     *                     @OA\Property(property="liste_des_equipements", type="array", @OA\Items(type="string"))
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Failed to retrieve classrooms"),
+     *             @OA\Property(property="error", type="string")
+     *         )
+     *     )
+     * )
      */
     public function index()
     {
@@ -37,9 +72,23 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Get the total number of classrooms in the database.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/classrooms/count",
+     *     summary="Get total number of classrooms",
+     *     tags={"Classrooms"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total count of classrooms",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="count", type="integer", example=10)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
      */
     public function count()
     {
@@ -83,7 +132,29 @@ class ClassroomController extends Controller
     // }
 
     /**
-     * Store a newly created classroom in storage.
+     * @OA\Post(
+     *     path="/api/classrooms",
+     *     summary="Create a new classroom",
+     *     tags={"Classrooms"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"nom_du_local", "departement", "capacite"},
+     *             @OA\Property(property="nom_du_local", type="string", example="Amphi A"),
+     *             @OA\Property(property="departement", type="string", example="Informatique"),
+     *             @OA\Property(property="capacite", type="integer", example=100),
+     *             @OA\Property(property="liste_des_equipements", type="array", @OA\Items(type="string"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Classroom created successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function store(Request $request)
     {
@@ -103,7 +174,26 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Display the specified classroom.
+     * @OA\Get(
+     *     path="/api/classrooms/{id}",
+     *     summary="Get a specific classroom",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Classroom ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Classroom details"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Classroom not found"
+     *     )
+     * )
      */
     public function show($id)
     {
@@ -120,7 +210,35 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Update the specified classroom in storage.
+     * @OA\Put(
+     *     path="/api/classrooms/{id}",
+     *     summary="Update a classroom",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Classroom ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nom_du_local", type="string", example="Amphi A"),
+     *             @OA\Property(property="departement", type="string", example="Informatique"),
+     *             @OA\Property(property="capacite", type="integer", example=100),
+     *             @OA\Property(property="liste_des_equipements", type="array", @OA\Items(type="string"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Classroom updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function update(Request $request, $id)
     {
@@ -150,7 +268,26 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Remove the specified classroom from storage.
+     * @OA\Delete(
+     *     path="/api/classrooms/{id}",
+     *     summary="Delete a classroom",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Classroom ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Classroom deleted successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Classroom not found"
+     *     )
+     * )
      */
     public function destroy($id)
     {
@@ -168,9 +305,15 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Get all available classrooms for scheduling.
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/classrooms/available",
+     *     summary="Get all available classrooms",
+     *     tags={"Classrooms"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of available classrooms"
+     *     )
+     * )
      */
     public function available()
     {
@@ -220,10 +363,34 @@ class ClassroomController extends Controller
     // }
 
     /**
-     * Schedule an exam in a classroom.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/classrooms/schedule-exam",
+     *     summary="Schedule an exam in a classroom",
+     *     tags={"Classrooms"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"classroom_id", "exam_id", "date_examen", "heure_debut", "heure_fin"},
+     *             @OA\Property(property="classroom_id", type="integer", example=1),
+     *             @OA\Property(property="exam_id", type="integer", example=1),
+     *             @OA\Property(property="date_examen", type="string", format="date", example="2024-03-20"),
+     *             @OA\Property(property="heure_debut", type="string", format="time", example="09:00"),
+     *             @OA\Property(property="heure_fin", type="string", format="time", example="11:00")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Exam scheduled successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Classroom not available for the specified time slot"
+     *     )
+     * )
      */
     public function scheduleExam(Request $request)
     {
@@ -349,10 +516,26 @@ class ClassroomController extends Controller
     // }
 
     /**
-     * Get a classroom by its name.
-     *
-     * @param string $classroomName
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/classrooms/name/{classroomName}",
+     *     summary="Get a classroom by its name",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="classroomName",
+     *         in="path",
+     *         required=true,
+     *         description="Name of the classroom",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Classroom details"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Classroom not found"
+     *     )
+     * )
      */
     public function getByName($classroomName)
     {
@@ -380,10 +563,68 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Get classrooms by date and time range.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/classrooms/by-datetime",
+     *     summary="Get classrooms by date, time range and department",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="date_examen",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date", example="2024-03-20")
+     *     ),
+     *     @OA\Parameter(
+     *         name="heure_debut",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="time", example="09:00")
+     *     ),
+     *     @OA\Parameter(
+     *         name="heure_fin",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="time", example="11:00")
+     *     ),
+     *     @OA\Parameter(
+     *         name="departement",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", example="Informatique")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of scheduled classroom IDs",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="scheduled_classroom_ids",
+     *                     type="array",
+     *                     @OA\Items(type="integer", example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Validation failed"),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="departement",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The departement field is required.")
+     *                 )
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function getClassroomsByDateTime(Request $request)
     {
@@ -396,6 +637,7 @@ class ClassroomController extends Controller
                 'date_examen' => 'required|date',
                 'heure_debut' => 'required|date_format:H:i',
                 'heure_fin' => 'required|date_format:H:i|after:heure_debut',
+                'departement' => 'required|string|max:255'
             ]);
 
             if ($validator->fails()) {
@@ -414,9 +656,11 @@ class ClassroomController extends Controller
             $heureDebut = date('H:i:s', strtotime($request->heure_debut));
             $heureFin = date('H:i:s', strtotime($request->heure_fin));
 
-            // Get classroom IDs that are scheduled for the given time slot
-            $query = DB::table('classroom_exam_schedule')
+            // Get scheduled classrooms with their details
+            $scheduledClassrooms = DB::table('classroom_exam_schedule')
+                ->join('classrooms', 'classroom_exam_schedule.classroom_id', '=', 'classrooms.id')
                 ->where('date_examen', $request->date_examen)
+                ->where('classrooms.departement', $request->departement)
                 ->where(function ($q) use ($heureDebut, $heureFin) {
                     $q->where(function ($subq) use ($heureDebut, $heureFin) {
                         $subq->where('heure_debut', '<=', $heureDebut)
@@ -428,31 +672,22 @@ class ClassroomController extends Controller
                         $subq->where('heure_debut', '>=', $heureDebut)
                             ->where('heure_fin', '<=', $heureFin);
                     });
-                });
-
-            // Log the SQL query and its bindings
-            \Illuminate\Support\Facades\Log::info('SQL Query:', [
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings(),
-                'formatted_times' => [
-                    'heure_debut' => $heureDebut,
-                    'heure_fin' => $heureFin
-                ]
-            ]);
-
-            $scheduledClassroomIds = $query->pluck('classroom_id')->toArray();
+                })
+                ->select('classrooms.*', 'classroom_exam_schedule.date_examen', 'classroom_exam_schedule.heure_debut', 'classroom_exam_schedule.heure_fin')
+                ->get();
 
             // Log the results
             \Illuminate\Support\Facades\Log::info('Search results:', [
-                'count' => count($scheduledClassroomIds),
-                'ids' => $scheduledClassroomIds
+                'count' => count($scheduledClassrooms),
+                'classrooms' => $scheduledClassrooms
             ]);
             \Illuminate\Support\Facades\Log::info('=== CLASSROOM SEARCH END ===');
 
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'scheduled_classroom_ids' => $scheduledClassroomIds
+                    'scheduled_classrooms' => $scheduledClassrooms,
+                    'count' => count($scheduledClassrooms)
                 ]
             ], 200);
         } catch (\Exception $e) {
@@ -471,10 +706,30 @@ class ClassroomController extends Controller
     }
 
     /**
-     * Get classrooms that are not in the provided list of IDs.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/classrooms/not-in-list",
+     *     summary="Get classrooms not in the provided list",
+     *     tags={"Classrooms"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="classroom_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer"),
+     *                 example={1, 2, 3}
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of classrooms not in the provided list"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function getClassroomsNotInList(Request $request)
     {
@@ -516,6 +771,38 @@ class ClassroomController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/classrooms/available-count",
+     *     summary="Get count of available classrooms for a time slot",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="date_examen",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="heure_debut",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="time")
+     *     ),
+     *     @OA\Parameter(
+     *         name="heure_fin",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="string", format="time")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Count of available classrooms",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="count", type="integer", example=5)
+     *         )
+     *     )
+     * )
+     */
     public function availableCount(Request $request)
     {
         $date = $request->input('date_examen');
@@ -542,6 +829,35 @@ class ClassroomController extends Controller
         return response()->json(['count' => $sallesDisponibles]);
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/classrooms/{id}/disponibilite",
+     *     summary="Update classroom availability",
+     *     tags={"Classrooms"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Classroom ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"disponible"},
+     *             @OA\Property(property="disponible", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Availability updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Classroom not found"
+     *     )
+     * )
+     */
     public function updateDisponibilite(Request $request, $id)
     {
         $salle = Classroom::findOrFail($id);
@@ -556,5 +872,53 @@ class ClassroomController extends Controller
             'message' => 'Disponibilité mise à jour avec succès',
             'salle' => $salle
         ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/classrooms/amphitheaters",
+     *     summary="Get all classrooms that start with 'Amphi' (case-insensitive)",
+     *     tags={"Classrooms"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of amphitheaters",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="nom_du_local", type="string", example="Amphi A"),
+     *                     @OA\Property(property="departement", type="string", example="Informatique"),
+     *                     @OA\Property(property="capacite", type="integer", example=100),
+     *                     @OA\Property(property="liste_des_equipements", type="array", @OA\Items(type="string"))
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
+     */
+    public function getAmphitheaters()
+    {
+        try {
+            $amphitheaters = Classroom::whereRaw('LOWER(nom_du_local) LIKE ?', ['amphi%'])
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $amphitheaters
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve amphitheaters',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

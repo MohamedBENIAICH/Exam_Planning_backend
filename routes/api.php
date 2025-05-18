@@ -12,6 +12,7 @@ use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExamClassroomAssignmentController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ExamNotificationController;
+use App\Http\Controllers\ProfesseurController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,7 +63,7 @@ Route::get('/students/by-exam/{examId}', [StudentController::class, 'getStudents
 */
 Route::prefix('classrooms')->group(function () {
     // Specific routes first to avoid conflicts
-    Route::get('/search', [ClassroomController::class, 'getClassroomsByDateTime']);
+    Route::get('/by-datetime', [ClassroomController::class, 'getClassroomsByDateTime']);
     Route::get('/available', [ClassroomController::class, 'available']);
     Route::get('/available-count', [ClassroomController::class, 'availableCount']);
     Route::get('/count', [ClassroomController::class, 'count']);
@@ -70,6 +71,7 @@ Route::prefix('classrooms')->group(function () {
     Route::get('/available-for-slot', [ClassroomController::class, 'getAvailableClassrooms']);
     Route::post('/schedule-exam', [ClassroomController::class, 'scheduleExam']);
     Route::post('/not-in-list', [ClassroomController::class, 'getClassroomsNotInList']);
+    Route::get('/amphitheaters', [ClassroomController::class, 'getAmphitheaters']);
 
     // Standard CRUD
     Route::get('/', [ClassroomController::class, 'index']);
@@ -95,6 +97,7 @@ Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}'
 | Superviseur Routes
 |--------------------------------------------------------------------------
 */
+Route::get('/superviseurs', [SuperviseurController::class, 'index']);
 Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
 Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
 
@@ -169,3 +172,11 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
 });
 
 Route::post('/exams/{exam}/send-invitations', [ExamNotificationController::class, 'sendNotifications']);
+
+/*
+|--------------------------------------------------------------------------
+| Professeur Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/professeurs/by-departement', [ProfesseurController::class, 'getByDepartement']);
+Route::get('/professeurs/departements', [ProfesseurController::class, 'getAllDepartements']);

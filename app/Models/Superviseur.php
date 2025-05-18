@@ -13,7 +13,7 @@ class Superviseur extends Model
         'departement',
         'nom',
         'prenom',
-        'type'
+        'poste'
     ];
 
     /**
