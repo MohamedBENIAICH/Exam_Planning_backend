@@ -298,7 +298,7 @@ class ExamController extends Controller
             $exam = Exam::create([
                 'formation' => $request->formation,
                 'filiere' => $request->filiere,
-                'module' => $request->module,
+                'module_id' => $request->module,
                 'semestre' => $request->semestre,
                 'date_examen' => $request->date_examen,
                 'heure_debut' => $request->heure_debut,
@@ -663,7 +663,7 @@ class ExamController extends Controller
             $exam->update([
                 'cycle' => $request->cycle,
                 'filiere' => $request->filiere,
-                'module' => $request->module,
+                'module_id' => $request->module,
                 'date_examen' => $request->date_examen,
                 'heure_debut' => $request->heure_debut,
                 'heure_fin' => $request->heure_fin,
@@ -795,6 +795,9 @@ class ExamController extends Controller
 
             // Load the updated exam with its relationships
             $exam->load(['students', 'superviseurs']);
+
+            // Call the notification service to send emails only to supervisors
+            app(\App\Services\ExamNotificationService::class)->sendSupervisorNotifications($exam);
 
             return response()->json([
                 'status' => 'success',
@@ -976,7 +979,7 @@ class ExamController extends Controller
                 // Get the related models
                 $formation = Formation::find($exam->formation);
                 $filiere = Filiere::find($exam->filiere);
-                $module = Module::find($exam->module);
+                $module = Module::find($exam->module_id);
 
                 return [
                     'id' => $exam->id,

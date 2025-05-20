@@ -12,7 +12,7 @@ class Exam extends Model
     protected $fillable = [
         'formation',
         'filiere',
-        'module',
+        'module_id',
         'semestre',
         'date_examen',
         'heure_debut',
@@ -27,7 +27,7 @@ class Exam extends Model
         'heure_fin' => 'datetime:H:i',
         'formation' => 'integer',
         'filiere' => 'integer',
-        'module' => 'integer'
+        'module_id' => 'integer'
     ];
 
     public function formation()
@@ -42,7 +42,7 @@ class Exam extends Model
 
     public function module()
     {
-        return $this->belongsTo(Module::class, 'module', 'id_module');
+        return $this->belongsTo(Module::class, 'module_id', 'id_module');
     }
 
     public function students()

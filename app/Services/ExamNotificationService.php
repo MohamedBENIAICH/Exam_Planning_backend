@@ -8,7 +8,7 @@ use App\Mail\ExamConvocation;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;  // Ajoute cette ligne
+use Illuminate\Support\Facades\Log;
 
 class ExamNotificationService
 {
@@ -21,25 +21,99 @@ class ExamNotificationService
 
     public function generateAndSendNotifications(Exam $exam)
     {
-        $exam->load(['classrooms', 'module', 'students']);
-        $students = $exam->students;
+        // Load all necessary relationships
+        $exam->load(['classrooms', 'module', 'students', 'superviseurs']);
 
-        // Récupérer le nom du module de manière sécurisée
-        $moduleName = '';
-        if ($exam->module_id && $exam->module) {
-            $moduleName = $exam->module->module_intitule;
-        } else {
-            $moduleName = $exam->module; // Fallback sur le champ module si la relation n'est pas disponible
+        // Get module name safely
+        $moduleName = $exam->module ? $exam->module->module_intitule : 'Module inconnu';
+
+        // Process supervisors if they are passed as a string
+        if (property_exists($exam, 'superviseurs') && is_string($exam->getAttribute('superviseurs'))) {
+            $supervisorName = trim($exam->getAttribute('superviseurs'));
+            $nameParts = explode(' ', $supervisorName);
+            $lastName = end($nameParts);
+            $firstName = implode(' ', array_slice($nameParts, 0, -1));
+
+            // Try to find or create the supervisor
+            $supervisor = \App\Models\Superviseur::firstOrCreate(
+                [
+                    'nom' => $lastName,
+                    'prenom' => $firstName
+                ],
+                [
+                    'departement' => $exam->filiere,
+                    'type' => 'normal'
+                ]
+            );
+
+            // Detach all existing supervisors and attach the new one
+            $exam->superviseurs()->detach();
+            $exam->superviseurs()->attach($supervisor->id);
+
+            // Force reload the superviseurs relationship
+            $exam->load('superviseurs');
+
+            Log::info('Supervisor attached to exam', [
+                'supervisor_id' => $supervisor->id,
+                'name' => $supervisor->prenom . ' ' . $supervisor->nom,
+                'exam_id' => $exam->id
+            ]);
+        }
+
+        // Ensure $exam->superviseurs is a collection before sending notifications
+        if (!($exam->superviseurs instanceof \Illuminate\Support\Collection)) {
+            $exam->load('superviseurs');
         }
 
         Log::info('Début de l\'envoi des notifications', [
             'exam_id' => $exam->id,
-            'students_count' => count($students),
+            'students_count' => $exam->students->count(),
+            'supervisors_count' => $exam->superviseurs instanceof \Illuminate\Database\Eloquent\Collection ? $exam->superviseurs->count() : 0,
             'module' => $moduleName,
-            'classrooms' => $exam->classrooms->pluck('nom')
+            'classrooms' => $exam->classrooms->pluck('nom_du_local')
         ]);
 
-        foreach ($students as $student) {
+        // Send notifications to supervisors first
+        if ($exam->superviseurs instanceof \Illuminate\Support\Collection && $exam->superviseurs->count() > 0) {
+            foreach ($exam->superviseurs as $supervisor) {
+                try {
+                    if (empty($supervisor->email)) {
+                        Log::error('Supervisor has no email address', [
+                            'supervisor_id' => $supervisor->id,
+                            'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                        ]);
+                        continue;
+                    }
+
+                    Log::info('Sending notification to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'email' => $supervisor->email,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+
+                    Mail::to($supervisor->email)->send(new \App\Mail\ExamSurveillanceNotification(
+                        $exam,
+                        $supervisor->prenom . ' ' . $supervisor->nom
+                    ));
+
+                    Log::info('Notification sent successfully to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'email' => $supervisor->email
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send notification to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+        } else {
+            Log::error('No valid supervisors found for exam', ['exam_id' => $exam->id, 'superviseurs' => $exam->superviseurs]);
+        }
+
+        // Then process student notifications
+        foreach ($exam->students as $student) {
             try {
                 Log::info('Traitement de l\'étudiant', [
                     'student_id' => $student->id,
@@ -90,8 +164,8 @@ class ExamNotificationService
                     'exam' => [
                         'name' => $moduleName,
                         'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
-                        'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
-                        'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
+                        'heure_debut' => $exam->heure_debut ? $exam->heure_debut->format('H:i') : 'Heure non spécifiée',
+                        'heure_fin' => $exam->heure_fin ? $exam->heure_fin->format('H:i') : 'Heure non spécifiée',
                         'salle' => $exam->classrooms->pluck('nom_du_local')->implode(', ') ?: 'Salle non spécifiée'
                     ]
                 ];
@@ -162,7 +236,7 @@ class ExamNotificationService
         $data = [
             'student' => $student,
             'exam' => [
-                'name' => $exam->module ?? 'Module non spécifié',
+                'name' => $exam->module ? $exam->module->module_intitule : 'Module non spécifié',
                 'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                 'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                 'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
@@ -175,7 +249,7 @@ class ExamNotificationService
             'examSchedule' => [
                 [
                     'jour' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
-                    'module' => $exam->module ?? 'Module non spécifié',
+                    'module' => $exam->module ? $exam->module->module_intitule : 'Module non spécifié',
                     'duree' => $duree,
                     'horaire' => $exam->heure_debut ? $exam->heure_debut->format('H:i') . ' - ' . $exam->heure_fin->format('H:i') : 'Horaire non spécifié',
                     'color' => 'green'
@@ -199,5 +273,67 @@ class ExamNotificationService
         // Générer le PDF
         $pdf = PDF::loadView('pdfs.convocation', $data);
         return $pdf->output();
+    }
+
+    /**
+     * Send notifications only to supervisors for a given exam.
+     *
+     * @param Exam $exam
+     * @return void
+     */
+    public function sendSupervisorNotifications(Exam $exam)
+    {
+        // Ensure relationships are loaded
+        $exam->load(['superviseurs', 'module', 'classrooms']);
+
+        // Get module name safely
+        $moduleName = $exam->module ? $exam->module->module_intitule : 'Module inconnu';
+
+        // Log supervisor notification start
+        Log::info('Début de l\'envoi des notifications aux superviseurs', [
+            'exam_id' => $exam->id,
+            'supervisors_count' => $exam->superviseurs instanceof \Illuminate\Database\Eloquent\Collection ? $exam->superviseurs->count() : 0,
+            'module' => $moduleName,
+            'classrooms' => $exam->classrooms->pluck('nom_du_local')
+        ]);
+
+        // Send notifications to supervisors
+        if ($exam->superviseurs instanceof \Illuminate\Support\Collection && $exam->superviseurs->count() > 0) {
+            foreach ($exam->superviseurs as $supervisor) {
+                try {
+                    if (empty($supervisor->email)) {
+                        Log::error('Supervisor has no email address', [
+                            'supervisor_id' => $supervisor->id,
+                            'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                        ]);
+                        continue;
+                    }
+
+                    Log::info('Sending notification to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'email' => $supervisor->email,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+
+                    Mail::to($supervisor->email)->send(new \App\Mail\ExamSurveillanceNotification(
+                        $exam,
+                        $supervisor->prenom . ' ' . $supervisor->nom
+                    ));
+
+                    Log::info('Notification sent successfully to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'email' => $supervisor->email
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send notification to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+        } else {
+            Log::error('No valid supervisors found for exam', ['exam_id' => $exam->id, 'superviseurs' => $exam->superviseurs]);
+        }
     }
 }
