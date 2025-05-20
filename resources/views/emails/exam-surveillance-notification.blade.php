@@ -16,7 +16,7 @@
         <li><strong>Date :</strong> {{ \Carbon\Carbon::parse($exam->date_examen)->format('d/m/Y') }}</li>
         <li><strong>Heure de début :</strong> {{ \Carbon\Carbon::parse($exam->heure_debut)->format('H:i') }}</li>
         <li><strong>Heure de fin :</strong> {{ \Carbon\Carbon::parse($exam->heure_fin)->format('H:i') }}</li>
-        <li><strong>Salles :</strong> {{ implode(', ', $exam->classrooms->pluck('nom')->toArray()) }}</li>
+        <li><strong>Salles :</strong> {{ implode(', ', $exam->classrooms->pluck('nom_du_local')->toArray()) }}</li>
     </ul>
 
     <p>Merci de votre collaboration.</p>

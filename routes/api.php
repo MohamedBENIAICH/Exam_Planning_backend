@@ -33,16 +33,19 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 Route::prefix('exams')->group(function () {
+    // Specific routes first
     Route::get('/with-names', [ExamController::class, 'getExamsWithNames']);
-    Route::get('/', [ExamController::class, 'index']);
     Route::get('/count', [ExamController::class, 'count']);
     Route::get('/latest', [ExamController::class, 'getLatestExams']);
-    Route::get('/{id}', [ExamController::class, 'show']);
-    Route::post('/', [ExamController::class, 'store']);
-    Route::put('/{id}', [ExamController::class, 'update']);
-    Route::delete('/{id}', [ExamController::class, 'destroy']);
     Route::get('/upcoming', [ExamController::class, 'getUpcomingExams']);
     Route::get('/passed', [ExamController::class, 'getPassedExams']);
+
+    // Standard CRUD routes
+    Route::get('/', [ExamController::class, 'index']);
+    Route::post('/', [ExamController::class, 'store']);
+    Route::get('/{id}', [ExamController::class, 'show']);
+    Route::put('/{id}', [ExamController::class, 'update']);
+    Route::delete('/{id}', [ExamController::class, 'destroy']);
 
     // Exam-Classroom Assignment
     Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);

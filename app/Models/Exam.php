@@ -13,7 +13,6 @@ class Exam extends Model
         'formation',
         'filiere',
         'module',
-        'module_id',
         'semestre',
         'date_examen',
         'heure_debut',
@@ -26,7 +25,25 @@ class Exam extends Model
         'date_examen' => 'date',
         'heure_debut' => 'datetime:H:i',
         'heure_fin' => 'datetime:H:i',
+        'formation' => 'integer',
+        'filiere' => 'integer',
+        'module' => 'integer'
     ];
+
+    public function formation()
+    {
+        return $this->belongsTo(Formation::class, 'formation', 'id_formation');
+    }
+
+    public function filiere()
+    {
+        return $this->belongsTo(Filiere::class, 'filiere', 'id_filiere');
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(Module::class, 'module', 'id_module');
+    }
 
     public function students()
     {
@@ -36,11 +53,6 @@ class Exam extends Model
     public function classrooms()
     {
         return $this->belongsToMany(Classroom::class);
-    }
-
-    public function module()
-    {
-        return $this->belongsTo(Module::class, 'module_id', 'id_module');
     }
 
     /**

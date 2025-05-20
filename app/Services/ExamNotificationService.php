@@ -21,22 +21,34 @@ class ExamNotificationService
 
     public function generateAndSendNotifications(Exam $exam)
     {
-        $exam->load(['classrooms', 'module', 'students']);
+        $exam->load(['classrooms', 'module', 'students', 'superviseurs']);
+        $moduleName_ = $exam->module->module_intitule ?? 'Module inconnu';
+        Log::info('Module chargé pour l\'examen', [
+            'module_name' => $moduleName_,
+            'module' => $exam->module,
+            'module_intitule' => optional($exam->module)->module_intitule
+        ]);
+
+        // Send notifications to supervisors
+        $this->sendSupervisorNotifications($exam);
+
         $students = $exam->students;
 
         // Récupérer le nom du module de manière sécurisée
         $moduleName = '';
         if ($exam->module_id && $exam->module) {
             $moduleName = $exam->module->module_intitule;
-        } else {
-            $moduleName = $exam->module; // Fallback sur le champ module si la relation n'est pas disponible
+        } elseif (is_string($exam->module)) {
+            $moduleName = $exam->module; // fallback
         }
+
+        $classrooms = $exam->classrooms;
 
         Log::info('Début de l\'envoi des notifications', [
             'exam_id' => $exam->id,
             'students_count' => count($students),
             'module' => $moduleName,
-            'classrooms' => $exam->classrooms->pluck('nom')
+            'classrooms' => $classrooms->pluck('nom_du_local')
         ]);
 
         foreach ($students as $student) {
@@ -90,9 +102,9 @@ class ExamNotificationService
                     'exam' => [
                         'name' => $moduleName,
                         'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
-                        'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
-                        'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
-                        'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée'
+                        'heure_debut' => $exam->heure_debut ?? 'Heure non spécifiée',
+                        'heure_fin' => $exam->heure_fin ?? 'Heure non spécifiée',
+                        'salle' => $classrooms->pluck('nom_du_local')->implode(', ') ?: 'Salle non spécifiée'
                     ]
                 ];
 
@@ -102,7 +114,6 @@ class ExamNotificationService
                     'exam_data' => $emailData['exam']
                 ]);
 
-                // Vérifier que les données sont valides avant l'envoi
                 if (!is_array($emailData) || !isset($emailData['exam']) || !isset($emailData['pdf_data'])) {
                     Log::error('Données invalides pour l\'email', [
                         'student_id' => $student->id,
@@ -111,7 +122,7 @@ class ExamNotificationService
                     throw new \Exception("Les données pour l'email sont invalides");
                 }
 
-                // Envoyer l'email avec la pièce jointe
+                // Envoyer l'email
                 Mail::to($student->email)->send(new ExamConvocation($student, $emailData));
 
                 Log::info("Email envoyé avec succès à l'étudiant", [
@@ -120,6 +131,46 @@ class ExamNotificationService
                 ]);
             } catch (\Exception $e) {
                 Log::error("Erreur lors de l'envoi de la convocation à l'étudiant : {$student->id}", [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Send notifications to all supervisors assigned to the exam
+     */
+    protected function sendSupervisorNotifications(Exam $exam)
+    {
+        foreach ($exam->superviseurs as $supervisor) {
+            try {
+                Log::info('Sending notification to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $supervisor->email,
+                    'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                ]);
+
+                if (empty($supervisor->email)) {
+                    Log::error('Supervisor has no email address', [
+                        'supervisor_id' => $supervisor->id,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($supervisor->email)->send(new \App\Mail\ExamSurveillanceNotification(
+                    $exam,
+                    $supervisor->prenom . ' ' . $supervisor->nom
+                ));
+
+                Log::info('Notification sent successfully to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $supervisor->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send notification to supervisor', [
+                    'supervisor_id' => $supervisor->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
@@ -166,7 +217,7 @@ class ExamNotificationService
                 'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                 'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                 'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',
-                'salle' => $exam->classrooms->pluck('nom')->implode(', ') ?: 'Salle non spécifiée',
+                'salle' => $exam->classrooms->pluck('nom_du_local')->implode(', ') ?: 'Salle non spécifiée',
                 'session' => 'Printemps', // Session par défaut
                 'year' => $exam->date_examen ? $exam->date_examen->format('Y') : date('Y'),
                 'month' => $exam->date_examen ? $exam->date_examen->format('F') : date('F'),

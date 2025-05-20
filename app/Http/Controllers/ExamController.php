@@ -11,10 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Models\Professeur;
-use App\Models\Superviseur;
-use App\Mail\ExamSurveillanceNotification;
 
 /**
  * @OA\Tag(
@@ -246,6 +242,23 @@ class ExamController extends Controller
     public function store(Request $request)
     {
         try {
+            // Format the date and time fields
+            if ($request->has('date_examen')) {
+                $request->merge([
+                    'date_examen' => date('Y-m-d', strtotime($request->date_examen))
+                ]);
+            }
+            if ($request->has('heure_debut')) {
+                $request->merge([
+                    'heure_debut' => date('H:i', strtotime($request->heure_debut))
+                ]);
+            }
+            if ($request->has('heure_fin')) {
+                $request->merge([
+                    'heure_fin' => date('H:i', strtotime($request->heure_fin))
+                ]);
+            }
+
             // Validate the request
             $validator = Validator::make($request->all(), [
                 'formation' => 'required|string|max:255',
@@ -355,49 +368,7 @@ class ExamController extends Controller
             DB::commit();
 
             // Load the exam with its relationships
-            $exam->load(['students', 'module', 'classrooms']);
-
-            // Send notifications to supervisors
-            $superviseurNames = explode(',', $request->superviseurs);
-            foreach ($superviseurNames as $name) {
-                $nameParts = explode(' ', trim($name));
-                if (count($nameParts) >= 2) {
-                    $superviseur = Superviseur::where('prenom', $nameParts[0])
-                        ->where('nom', $nameParts[1])
-                        ->first();
-
-                    if ($superviseur && $superviseur->email) {
-                        try {
-                            Mail::to($superviseur->email)
-                                ->send(new ExamSurveillanceNotification($exam, $name));
-
-                            Log::info("Notification envoyée au superviseur: {$name} ({$superviseur->email})");
-                        } catch (\Exception $e) {
-                            Log::error("Erreur d'envoi d'email au superviseur {$name}: " . $e->getMessage());
-                        }
-                    } else {
-                        Log::warning("Superviseur non trouvé ou email manquant: {$name}");
-                    }
-                }
-            }
-
-            // Send notifications to professors
-            $module = Module::find($exam->module_id);
-            if ($module) {
-                $professeur = Professeur::where('email', $module->email_prof)->first();
-                if ($professeur) {
-                    try {
-                        Mail::to($professeur->email)
-                            ->send(new ExamSurveillanceNotification($exam, $professeur->nom . ' ' . $professeur->prenom));
-
-                        Log::info("Notification envoyée au professeur: {$professeur->nom} {$professeur->prenom} ({$professeur->email})");
-                    } catch (\Exception $e) {
-                        Log::error("Erreur d'envoi d'email au professeur {$professeur->nom}: " . $e->getMessage());
-                    }
-                } else {
-                    Log::warning("Professeur non trouvé pour le module: {$module->module_intitule}");
-                }
-            }
+            $exam->load(['students']);
 
             return response()->json([
                 'status' => 'success',
@@ -606,6 +577,23 @@ class ExamController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Format the date and time fields
+        if ($request->has('date_examen')) {
+            $request->merge([
+                'date_examen' => date('Y-m-d', strtotime($request->date_examen))
+            ]);
+        }
+        if ($request->has('heure_debut')) {
+            $request->merge([
+                'heure_debut' => date('H:i', strtotime($request->heure_debut))
+            ]);
+        }
+        if ($request->has('heure_fin')) {
+            $request->merge([
+                'heure_fin' => date('H:i', strtotime($request->heure_fin))
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'cycle' => 'string',
             'filiere' => 'string',
@@ -908,6 +896,7 @@ class ExamController extends Controller
             ], 500);
         }
     }
+
     /**
      * @OA\Get(
      *     path="/api/exams/with-names",
@@ -950,30 +939,25 @@ class ExamController extends Controller
     public function getExamsWithNames()
     {
         try {
-            // Fetch exams with their related module
-            $exams = Exam::with('module')->get();
+            // Fetch exams with their related data
+            $exams = Exam::with(['formation', 'filiere', 'module'])->get();
 
             // Transform the data to include names instead of IDs
             $transformedExams = $exams->map(function ($exam) {
-                // Déterminer le nom du module
-                $moduleName = null;
-                if ($exam->module_id && $exam->module) {
-                    // Si nous avons une relation module valide
-                    $moduleName = $exam->module->module_intitule;
-                } else {
-                    // Utiliser l'ancien champ module si la relation n'est pas établie
-                    $moduleName = $exam->module;
-                }
+                // Get the related models
+                $formation = Formation::find($exam->formation);
+                $filiere = Filiere::find($exam->filiere);
+                $module = Module::find($exam->module);
 
                 return [
                     'id' => $exam->id,
-                    'formation_name' => $exam->formation,
-                    'filiere_name' => $exam->filiere,
-                    'module_name' => $moduleName,
+                    'formation_name' => $formation ? $formation->formation_intitule : null,
+                    'filiere_name' => $filiere ? $filiere->filiere_intitule : null,
+                    'module_name' => $module ? $module->module_intitule : null,
                     'semestre' => $exam->semestre,
-                    'date_examen' => $exam->date_examen ? $exam->date_examen->format('Y-m-d') : null,
-                    'heure_debut' => $exam->heure_debut ? $exam->heure_debut->format('H:i') : null,
-                    'heure_fin' => $exam->heure_fin ? $exam->heure_fin->format('H:i') : null,
+                    'date_examen' => date('Y-m-d', strtotime($exam->date_examen)),
+                    'heure_debut' => date('H:i', strtotime($exam->heure_debut)),
+                    'heure_fin' => date('H:i', strtotime($exam->heure_fin)),
                     'locaux' => $exam->locaux,
                     'superviseurs' => $exam->superviseurs
                 ];
