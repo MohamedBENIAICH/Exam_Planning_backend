@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Models\Professeur;
+use App\Models\Superviseur;
+use App\Mail\ExamSurveillanceNotification;
 
 /**
  * @OA\Tag(
@@ -351,7 +355,49 @@ class ExamController extends Controller
             DB::commit();
 
             // Load the exam with its relationships
-            $exam->load(['students']);
+            $exam->load(['students', 'module', 'classrooms']);
+
+            // Send notifications to supervisors
+            $superviseurNames = explode(',', $request->superviseurs);
+            foreach ($superviseurNames as $name) {
+                $nameParts = explode(' ', trim($name));
+                if (count($nameParts) >= 2) {
+                    $superviseur = Superviseur::where('prenom', $nameParts[0])
+                        ->where('nom', $nameParts[1])
+                        ->first();
+
+                    if ($superviseur && $superviseur->email) {
+                        try {
+                            Mail::to($superviseur->email)
+                                ->send(new ExamSurveillanceNotification($exam, $name));
+
+                            Log::info("Notification envoyée au superviseur: {$name} ({$superviseur->email})");
+                        } catch (\Exception $e) {
+                            Log::error("Erreur d'envoi d'email au superviseur {$name}: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("Superviseur non trouvé ou email manquant: {$name}");
+                    }
+                }
+            }
+
+            // Send notifications to professors
+            $module = Module::find($exam->module_id);
+            if ($module) {
+                $professeur = Professeur::where('email', $module->email_prof)->first();
+                if ($professeur) {
+                    try {
+                        Mail::to($professeur->email)
+                            ->send(new ExamSurveillanceNotification($exam, $professeur->nom . ' ' . $professeur->prenom));
+
+                        Log::info("Notification envoyée au professeur: {$professeur->nom} {$professeur->prenom} ({$professeur->email})");
+                    } catch (\Exception $e) {
+                        Log::error("Erreur d'envoi d'email au professeur {$professeur->nom}: " . $e->getMessage());
+                    }
+                } else {
+                    Log::warning("Professeur non trouvé pour le module: {$module->module_intitule}");
+                }
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -858,6 +904,91 @@ class ExamController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve passed exams',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
+     * @OA\Get(
+     *     path="/api/exams/with-names",
+     *     summary="Get all exams with names instead of IDs",
+     *     tags={"Exams"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of exams with names retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="formation_name", type="string", example="Licence en Informatique"),
+     *                     @OA\Property(property="filiere_name", type="string", example="Informatique"),
+     *                     @OA\Property(property="module_name", type="string", example="Programmation Web"),
+     *                     @OA\Property(property="semestre", type="string", example="S5"),
+     *                     @OA\Property(property="date_examen", type="string", format="date", example="2024-04-20"),
+     *                     @OA\Property(property="heure_debut", type="string", format="time", example="09:00"),
+     *                     @OA\Property(property="heure_fin", type="string", format="time", example="11:00"),
+     *                     @OA\Property(property="locaux", type="string", example="Amphi A"),
+     *                     @OA\Property(property="superviseurs", type="string", example="Dr. Smith, Dr. Johnson")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Failed to retrieve exams with names"),
+     *             @OA\Property(property="error", type="string", example="Error message details")
+     *         )
+     *     )
+     * )
+     */
+    public function getExamsWithNames()
+    {
+        try {
+            // Fetch exams with their related module
+            $exams = Exam::with('module')->get();
+
+            // Transform the data to include names instead of IDs
+            $transformedExams = $exams->map(function ($exam) {
+                // Déterminer le nom du module
+                $moduleName = null;
+                if ($exam->module_id && $exam->module) {
+                    // Si nous avons une relation module valide
+                    $moduleName = $exam->module->module_intitule;
+                } else {
+                    // Utiliser l'ancien champ module si la relation n'est pas établie
+                    $moduleName = $exam->module;
+                }
+
+                return [
+                    'id' => $exam->id,
+                    'formation_name' => $exam->formation,
+                    'filiere_name' => $exam->filiere,
+                    'module_name' => $moduleName,
+                    'semestre' => $exam->semestre,
+                    'date_examen' => $exam->date_examen ? $exam->date_examen->format('Y-m-d') : null,
+                    'heure_debut' => $exam->heure_debut ? $exam->heure_debut->format('H:i') : null,
+                    'heure_fin' => $exam->heure_fin ? $exam->heure_fin->format('H:i') : null,
+                    'locaux' => $exam->locaux,
+                    'superviseurs' => $exam->superviseurs
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $transformedExams
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in getExamsWithNames: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve exams with names',
                 'error' => $e->getMessage()
             ], 500);
         }

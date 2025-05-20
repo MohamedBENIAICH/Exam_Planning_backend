@@ -13,6 +13,7 @@ class Exam extends Model
         'formation',
         'filiere',
         'module',
+        'module_id',
         'semestre',
         'date_examen',
         'heure_debut',
@@ -35,6 +36,11 @@ class Exam extends Model
     public function classrooms()
     {
         return $this->belongsToMany(Classroom::class);
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(Module::class, 'module_id', 'id_module');
     }
 
     /**

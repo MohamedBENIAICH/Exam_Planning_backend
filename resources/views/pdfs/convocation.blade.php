@@ -174,7 +174,10 @@
                     <strong>Prénom :</strong> {{ $student->nom }}
                 </div>
                 <div class="info-row">
-                    <strong>Code Apogée :</strong> {{ $student->cne ?? ($student->numero_etudiant ?? '') }}
+                    <strong>Code Apogée :</strong> {{ $student->numero_etudiant ?? '' }}
+                </div>
+                <div class="info-row">
+                    <strong>CNE :</strong> {{ $student->cne ?? '' }}
                 </div>
                 <div class="info-row">
                     <strong>Local :</strong> {{ $exam['salle'] }}

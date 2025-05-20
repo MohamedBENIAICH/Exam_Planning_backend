@@ -21,12 +21,21 @@ class ExamNotificationService
 
     public function generateAndSendNotifications(Exam $exam)
     {
-        $exam->load('classrooms');
+        $exam->load(['classrooms', 'module', 'students']);
         $students = $exam->students;
+
+        // Récupérer le nom du module de manière sécurisée
+        $moduleName = '';
+        if ($exam->module_id && $exam->module) {
+            $moduleName = $exam->module->module_intitule;
+        } else {
+            $moduleName = $exam->module; // Fallback sur le champ module si la relation n'est pas disponible
+        }
+
         Log::info('Début de l\'envoi des notifications', [
             'exam_id' => $exam->id,
             'students_count' => count($students),
-            'module' => $exam->module,
+            'module' => $moduleName,
             'classrooms' => $exam->classrooms->pluck('nom')
         ]);
 
@@ -35,6 +44,7 @@ class ExamNotificationService
                 Log::info('Traitement de l\'étudiant', [
                     'student_id' => $student->id,
                     'email' => $student->email,
+                    'cne' => $student->cne,
                     'qr_code' => $student->qr_code
                 ]);
 
@@ -43,8 +53,8 @@ class ExamNotificationService
                     $qrData = [
                         'nom' => $student->prenom ?? '',
                         'prenom' => $student->nom ?? '',
-                        'codeApogee' => $student->cne ?? $student->numero_etudiant ?? '',
-                        'cne' => $student->cne ?? ''
+                        'codeApogee' => $student->numero_etudiant ?? '',
+                        'cne' => $student->cne ?? 'AA06516'
                     ];
 
                     // Générer le QR code
@@ -78,7 +88,7 @@ class ExamNotificationService
                 $emailData = [
                     'pdf_data' => $pdf,
                     'exam' => [
-                        'name' => $exam->module ?? 'Module non spécifié',
+                        'name' => $moduleName,
                         'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
                         'heure_debut' => $exam->heure_debut ? $exam->heure_debut : 'Heure non spécifiée',
                         'heure_fin' => $exam->heure_fin ? $exam->heure_fin : 'Heure non spécifiée',

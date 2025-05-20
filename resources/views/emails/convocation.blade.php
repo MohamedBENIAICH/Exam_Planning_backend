@@ -49,8 +49,9 @@
         <p>Vos informations :</p>
         <ul>
             <li><strong>CNE :</strong> {{ $student->cne }}</li>
-            <li><strong>Nom :</strong> {{ $student->nom }}</li>
-            <li><strong>Prénom :</strong> {{ $student->prenom }}</li>
+            <li><strong>Code Apogée :</strong> {{ $student->numero_etudiant }}</li>
+            <li><strong>Nom :</strong> {{ $student->prenom }}</li>
+            <li><strong>Prénom :</strong> {{ $student->nom }}</li>
         </ul>
     </div>
     <div class="footer">

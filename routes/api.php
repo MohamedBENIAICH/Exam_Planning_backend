@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 Route::prefix('exams')->group(function () {
+    Route::get('/with-names', [ExamController::class, 'getExamsWithNames']);
     Route::get('/', [ExamController::class, 'index']);
     Route::get('/count', [ExamController::class, 'count']);
     Route::get('/latest', [ExamController::class, 'getLatestExams']);
