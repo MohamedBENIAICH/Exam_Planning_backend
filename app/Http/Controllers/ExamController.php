@@ -7,10 +7,13 @@ use App\Models\Student;
 use App\Models\Formation;
 use App\Models\Filiere;
 use App\Models\Module;
+use App\Models\Superviseur;
+use App\Mail\ExamSurveillanceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * @OA\Tag(
@@ -368,7 +371,33 @@ class ExamController extends Controller
             DB::commit();
 
             // Load the exam with its relationships
-            $exam->load(['students']);
+            $exam->load(['students', 'module', 'classrooms']);
+
+            // Send notifications to supervisors
+            if ($request->has('superviseurs')) {
+                $superviseurNames = explode(',', $request->superviseurs);
+                foreach ($superviseurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $superviseur = Superviseur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+
+                        if ($superviseur && $superviseur->email) {
+                            try {
+                                Mail::to($superviseur->email)
+                                    ->send(new ExamSurveillanceNotification($exam, $name));
+
+                                Log::info("Notification envoyée au superviseur: {$name} ({$superviseur->email})");
+                            } catch (\Exception $e) {
+                                Log::error("Erreur d'envoi d'email au superviseur {$name}: " . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Superviseur non trouvé ou email manquant: {$name}");
+                        }
+                    }
+                }
+            }
 
             return response()->json([
                 'status' => 'success',
