@@ -18,7 +18,8 @@ class Exam extends Model
         'heure_debut',
         'heure_fin',
         'locaux',
-        'superviseurs'
+        'superviseurs',
+        'professeurs'
     ];
 
     protected $casts = [
@@ -61,6 +62,15 @@ class Exam extends Model
     public function superviseurs()
     {
         return $this->belongsToMany(Superviseur::class, 'exam_superviseur')
+            ->withTimestamps();
+    }
+
+    /**
+     * The professors assigned to the exam.
+     */
+    public function professeurs()
+    {
+        return $this->belongsToMany(Professeur::class, 'exam_professeur')
             ->withTimestamps();
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Formation;
 use App\Models\Filiere;
 use App\Models\Module;
 use App\Models\Superviseur;
+use App\Models\Professeur;
 use App\Mail\ExamSurveillanceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -272,7 +273,8 @@ class ExamController extends Controller
                 'heure_debut' => 'required|date_format:H:i',
                 'heure_fin' => 'required|date_format:H:i',
                 'locaux' => 'required|string|max:255',
-                'superviseurs' => 'required|string|max:255',
+                'superviseurs' => 'nullable|string|max:255',
+                'professeurs' => 'required|string|max:255',
                 'classroom_ids' => 'nullable|array',
                 'classroom_ids.*' => 'exists:classrooms,id',
                 'students' => 'array',
@@ -304,8 +306,46 @@ class ExamController extends Controller
                 'heure_debut' => $request->heure_debut,
                 'heure_fin' => $request->heure_fin,
                 'locaux' => $request->locaux,
-                'superviseurs' => $request->superviseurs
+                'superviseurs' => $request->superviseurs,
+                'professeurs' => $request->professeurs
             ]);
+
+            // Process professors
+            if ($request->has('professeurs')) {
+                $professeurNames = explode(',', $request->professeurs);
+                $professeurIds = [];
+
+                foreach ($professeurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $professeur = Professeur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+
+                        if (!$professeur) {
+                            // Create new professor if not exists
+                            $professeur = Professeur::create([
+                                'nom' => $nameParts[1],
+                                'prenom' => $nameParts[0],
+                                'departement' => $request->filiere, // Use the exam's filiere as the department
+                                'email' => strtolower($nameParts[0] . '.' . $nameParts[1] . '@example.com') // Generate a temporary email
+                            ]);
+                        }
+
+                        $professeurIds[] = $professeur->id;
+                    }
+                }
+
+                // Sync professors
+                $exam->professeurs()->sync($professeurIds);
+
+                // Log the sync for debugging
+                DB::table('logs')->insert([
+                    'message' => "Synced professors " . implode(', ', $professeurIds) . " with exam {$exam->id}",
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
 
             // Sync classrooms if provided
             if ($request->has('classroom_ids')) {
@@ -394,6 +434,32 @@ class ExamController extends Controller
                             }
                         } else {
                             Log::warning("Superviseur non trouvé ou email manquant: {$name}");
+                        }
+                    }
+                }
+            }
+
+            // Send notifications to professors
+            if ($request->has('professeurs')) {
+                $professeurNames = explode(',', $request->professeurs);
+                foreach ($professeurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $professeur = Professeur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+
+                        if ($professeur && $professeur->email) {
+                            try {
+                                Mail::to($professeur->email)
+                                    ->send(new ExamSurveillanceNotification($exam, $name));
+
+                                Log::info("Notification envoyée au professeur: {$name} ({$professeur->email})");
+                            } catch (\Exception $e) {
+                                Log::error("Erreur d'envoi d'email au professeur {$name}: " . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Professeur non trouvé ou email manquant: {$name}");
                         }
                     }
                 }

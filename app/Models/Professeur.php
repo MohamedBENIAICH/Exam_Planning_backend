@@ -15,4 +15,13 @@ class Professeur extends Model
         'prenom',
         'departement'
     ];
+
+    /**
+     * The exams that the professor is assigned to.
+     */
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class, 'exam_professeur')
+            ->withTimestamps();
+    }
 }
