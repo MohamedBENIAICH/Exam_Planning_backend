@@ -41,9 +41,11 @@ class SuperviseurController extends Controller
      */
     public function index()
     {
-        $superviseurs = Superviseur::select('id', 'nom', 'prenom', 'poste')
-            ->orderBy('nom')
-            ->get();
+        // $superviseurs = Superviseur::select('id', 'nom', 'prenom', 'poste')
+        //     ->orderBy('nom')
+        //     ->get();
+
+        $superviseurs = Superviseur::get();
 
         return response()->json($superviseurs);
     }
@@ -159,5 +161,20 @@ class SuperviseurController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function store(Request $request)
+    {
+        $validatedDate = $request->validate([
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'email' => 'required|email|unique:superviseurs',
+            'poste' => 'required|string',
+            'departement' => 'required|string'
+            ]);
+
+        $superviseur = Superviseur::create($validatedDate);
+
+        return response()->json($superviseur, 201);
     }
 }

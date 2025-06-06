@@ -672,77 +672,79 @@ class ExamController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Format the date and time fields
-        if ($request->has('date_examen')) {
-            $request->merge([
-                'date_examen' => date('Y-m-d', strtotime($request->date_examen))
-            ]);
-        }
-        if ($request->has('heure_debut')) {
-            $request->merge([
-                'heure_debut' => date('H:i', strtotime($request->heure_debut))
-            ]);
-        }
-        if ($request->has('heure_fin')) {
-            $request->merge([
-                'heure_fin' => date('H:i', strtotime($request->heure_fin))
-            ]);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'cycle' => 'string',
-            'filiere' => 'string',
-            'module' => 'string',
-            'date_examen' => 'date',
-            'heure_debut' => 'date_format:H:i',
-            'heure_fin' => 'date_format:H:i',
-            'locaux' => 'string',
-            'superviseurs' => 'string',
-            'classroom_ids' => 'nullable|array',
-            'classroom_ids.*' => 'exists:classrooms,id',
-            'superviseur_ids' => 'nullable|array',
-            'superviseur_ids.*' => 'exists:superviseurs,id',
-            'students' => 'array',
-            'students.*.studentId' => 'string',
-            'students.*.firstName' => 'string',
-            'students.*.lastName' => 'string',
-            'students.*.email' => 'email',
-            'students.*.program' => 'string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
+            // Format the date and time fields
+            if ($request->has('date_examen')) {
+                $request->merge([
+                    'date_examen' => date('Y-m-d', strtotime($request->date_examen))
+                ]);
+            }
+            if ($request->has('heure_debut')) {
+                $request->merge([
+                    'heure_debut' => date('H:i', strtotime($request->heure_debut))
+                ]);
+            }
+            if ($request->has('heure_fin')) {
+                $request->merge([
+                    'heure_fin' => date('H:i', strtotime($request->heure_fin))
+                ]);
+            }
+
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'formation' => 'required|string|max:255',
+                'filiere' => 'required|string|max:255',
+                'module' => 'required|string|max:255',
+                'semestre' => 'required|string|max:255',
+                'date_examen' => 'required|date',
+                'heure_debut' => 'required|date_format:H:i',
+                'heure_fin' => 'required|date_format:H:i',
+                'locaux' => 'required|string|max:255',
+                'superviseurs' => 'nullable|string|max:255',
+                'professeurs' => 'required|string|max:255',
+                'classroom_ids' => 'nullable|array',
+                'classroom_ids.*' => 'exists:classrooms,id',
+                'students' => 'array',
+                'students.*.studentId' => 'string',
+                'students.*.firstName' => 'string',
+                'students.*.lastName' => 'string',
+                'students.*.email' => 'email',
+                'students.*.program' => 'string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             // Start a database transaction
             DB::beginTransaction();
-
             // Find the exam
             $exam = Exam::findOrFail($id);
 
             // Update exam details
             $exam->update([
-                'cycle' => $request->cycle,
+                'formation' => $request->formation,
                 'filiere' => $request->filiere,
                 'module_id' => $request->module,
+                'semestre' => $request->semestre,
                 'date_examen' => $request->date_examen,
                 'heure_debut' => $request->heure_debut,
                 'heure_fin' => $request->heure_fin,
                 'locaux' => $request->locaux,
-                'superviseurs' => $request->superviseurs
+                'superviseurs' => $request->superviseurs,
+                'professeurs' => $request->professeurs
             ]);
 
             // Sync classrooms if provided
             if ($request->has('classroom_ids')) {
-                // Ensure all classroom IDs are integers
-                $classroomIds = is_array($request->classroom_ids) ? array_map('intval', $request->classroom_ids) : [];
+                $classroomIds = is_array($request->classroom_ids) 
+                    ? array_map('intval', $request->classroom_ids) 
+                    : [];
 
-                // Sync the classrooms with the exam
                 $exam->classrooms()->sync($classroomIds);
 
                 // Create schedule entries for each classroom
@@ -756,7 +758,7 @@ class ExamController extends Controller
                     ]);
                 }
 
-                // Log the sync for debugging
+                // Log the sync
                 DB::table('logs')->insert([
                     'message' => "Synced classrooms " . implode(', ', $classroomIds) . " with exam {$exam->id}",
                     'created_at' => now(),
@@ -764,105 +766,47 @@ class ExamController extends Controller
                 ]);
             }
 
-            // Sync supervisors if provided
+            // Sync supervisors
             if ($request->has('superviseur_ids')) {
-                // Ensure all supervisor IDs are integers
-                $superviseurIds = is_array($request->superviseur_ids) ? array_map('intval', $request->superviseur_ids) : [];
+                $superviseurIds = is_array($request->superviseur_ids) 
+                    ? array_map('intval', $request->superviseur_ids) 
+                    : [];
 
-                // Sync the supervisors with the exam
                 $exam->superviseurs()->sync($superviseurIds);
 
-                // Log the sync for debugging
+                // Log the sync
                 DB::table('logs')->insert([
                     'message' => "Synced supervisors " . implode(', ', $superviseurIds) . " with exam {$exam->id}",
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
-            } else if (!empty($request->superviseurs)) {
-                // Process supervisors from the superviseurs field
-                $superviseurIds = [];
-                $superviseursParts = explode(',', $request->superviseurs);
-
-                foreach ($superviseursParts as $part) {
-                    $part = trim($part);
-                    if (is_numeric($part)) {
-                        $superviseurIds[] = (int)$part;
-                    } else {
-                        // If it's a name, try to find or create the supervisor
-                        $nameParts = explode(' ', $part);
-                        $lastName = end($nameParts); // Last word is the last name
-                        $firstName = implode(' ', array_slice($nameParts, 0, -1)); // Everything else is first name
-
-                        // Try to find the supervisor by name
-                        $superviseur = \App\Models\Superviseur::where('nom', $lastName)
-                            ->where('prenom', $firstName)
-                            ->first();
-
-                        // If not found, create a new supervisor
-                        if (!$superviseur) {
-                            $superviseur = \App\Models\Superviseur::create([
-                                'nom' => $lastName,
-                                'prenom' => $firstName,
-                                'departement' => $request->filiere, // Use the exam's filiere as the department
-                                'type' => 'normal' // Default type
-                            ]);
-
-                            // Log the creation for debugging
-                            DB::table('logs')->insert([
-                                'message' => "Created new supervisor: {$firstName} {$lastName}",
-                                'created_at' => now(),
-                                'updated_at' => now()
-                            ]);
-                        }
-
-                        $superviseurIds[] = $superviseur->id;
-                    }
-                }
-
-                // Sync the supervisors with the exam
-                if (!empty($superviseurIds)) {
-                    $exam->superviseurs()->sync($superviseurIds);
-
-                    // Log the sync for debugging
-                    DB::table('logs')->insert([
-                        'message' => "Synced supervisors " . implode(', ', $superviseurIds) . " with exam {$exam->id}",
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                }
             }
 
             // Process students
-            $studentIds = [];
             foreach ($request->students as $studentData) {
-                // Check if student already exists
-                $student = Student::where('numero_etudiant', $studentData['studentId'])->first();
-
-                if (!$student) {
-                    // Create new student if not exists
-                    $student = Student::create([
-                        'nom' => $studentData['lastName'],
-                        'prenom' => $studentData['firstName'],
-                        'numero_etudiant' => $studentData['studentId'],
-                        'email' => $studentData['email'],
-                        'filiere' => $studentData['program'],
-                        'niveau' => 'L3' // Default value, adjust as needed
-                    ]);
-                }
+                $student = Student::firstOrCreate([
+                    'numero_etudiant' => $studentData['studentId']
+                ], [
+                    'nom' => $studentData['lastName'],
+                    'prenom' => $studentData['firstName'],
+                    'email' => $studentData['email'],
+                    'filiere' => $studentData['program'],
+                    'niveau' => 'L3'
+                ]);
 
                 $studentIds[] = $student->id;
             }
 
-            // Sync students (this will remove any students not in the new list and add new ones)
+            // Sync students
             $exam->students()->sync($studentIds);
 
             // Commit the transaction
             DB::commit();
 
-            // Load the updated exam with its relationships
+            // Load the updated exam with relationships
             $exam->load(['students', 'superviseurs']);
 
-            // Call the notification service to send emails only to supervisors
+            // Send notifications to supervisors
             app(\App\Services\ExamNotificationService::class)->sendSupervisorNotifications($exam);
 
             return response()->json([
@@ -870,9 +814,16 @@ class ExamController extends Controller
                 'message' => 'Exam updated successfully',
                 'data' => $exam
             ], 200);
+
         } catch (\Exception $e) {
-            // Rollback the transaction if an error occurs
             DB::rollBack();
+            
+            // Log the error
+            DB::table('logs')->insert([
+                'message' => "Error updating exam {$id}: " . $e->getMessage(),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
             return response()->json([
                 'status' => 'error',

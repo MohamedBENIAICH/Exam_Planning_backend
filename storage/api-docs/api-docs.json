@@ -1497,6 +1497,108 @@
                 }
             }
         },
+        "/api/exams/with-names": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get all exams with names instead of IDs",
+                "operationId": "129c3acb4aa1dd899758f33e42e0790b",
+                "responses": {
+                    "200": {
+                        "description": "List of exams with names retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "formation_name": {
+                                                        "type": "string",
+                                                        "example": "Licence en Informatique"
+                                                    },
+                                                    "filiere_name": {
+                                                        "type": "string",
+                                                        "example": "Informatique"
+                                                    },
+                                                    "module_name": {
+                                                        "type": "string",
+                                                        "example": "Programmation Web"
+                                                    },
+                                                    "semestre": {
+                                                        "type": "string",
+                                                        "example": "S5"
+                                                    },
+                                                    "date_examen": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "2024-04-20"
+                                                    },
+                                                    "heure_debut": {
+                                                        "type": "string",
+                                                        "format": "time",
+                                                        "example": "09:00"
+                                                    },
+                                                    "heure_fin": {
+                                                        "type": "string",
+                                                        "format": "time",
+                                                        "example": "11:00"
+                                                    },
+                                                    "locaux": {
+                                                        "type": "string",
+                                                        "example": "Amphi A"
+                                                    },
+                                                    "superviseurs": {
+                                                        "type": "string",
+                                                        "example": "Dr. Smith, Dr. Johnson"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve exams with names"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Error message details"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/modules/{id}/name": {
             "get": {
                 "tags": [
@@ -1605,6 +1707,47 @@
                                     "type": "array",
                                     "items": {
                                         "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/professeurs": {
+            "get": {
+                "tags": [
+                    "Professeurs"
+                ],
+                "summary": "Get all professors",
+                "operationId": "4048b401adeaf5282a9ed29d63b9cd0f",
+                "responses": {
+                    "200": {
+                        "description": "List of all professors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "nom": {
+                                                "type": "string"
+                                            },
+                                            "prenom": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "departement": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 }
                             }

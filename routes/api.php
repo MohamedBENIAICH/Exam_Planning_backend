@@ -106,6 +106,21 @@ Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}'
 Route::get('/superviseurs', [SuperviseurController::class, 'index']);
 Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
 Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
+Route::post('/superviseurs', [SuperviseurController::class, 'store']);
+
+/*
+|--------------------------------------------------------------------------
+| Professor Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('professeurs')->group(function () {
+    Route::get('/', [ProfesseurController::class, 'index']);
+    Route::post('/', [ProfesseurController::class, 'store']);
+    Route::get('/by-departement', [ProfesseurController::class, 'getByDepartement']);
+    Route::get('/departements', [ProfesseurController::class, 'getAllDepartements']);
+    Route::delete('/{id}', [ProfesseurController::class, 'destroy']);
+    Route::put('/{id}', [ProfesseurController::class, 'update']);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -179,10 +194,4 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
 
 Route::post('/exams/{exam}/send-invitations', [ExamNotificationController::class, 'sendNotifications']);
 
-/*
-|--------------------------------------------------------------------------
-| Professeur Routes
-|--------------------------------------------------------------------------
-*/
-Route::get('/professeurs/by-departement', [ProfesseurController::class, 'getByDepartement']);
-Route::get('/professeurs/departements', [ProfesseurController::class, 'getAllDepartements']);
+Route::get('/api/documentation', '\L5Swagger\Http\Controllers\SwaggerController@api')->name('l5-swagger.default.docs');
