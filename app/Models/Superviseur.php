@@ -10,7 +10,7 @@ class Superviseur extends Model
     use HasFactory;
 
     protected $fillable = [
-        'departement',
+        'service',
         'nom',
         'prenom',
         'poste',

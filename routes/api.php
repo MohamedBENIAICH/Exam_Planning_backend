@@ -87,7 +87,6 @@ Route::prefix('classrooms')->group(function () {
     Route::delete('/{id}', [ClassroomController::class, 'destroy']);
     Route::put('/{id}/disponibilite', [ClassroomController::class, 'updateDisponibilite']);
 });
-
 /*
 |--------------------------------------------------------------------------
 | Formation Routes
@@ -97,17 +96,17 @@ Route::get('/formations', [FormationController::class, 'index']);
 Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
 Route::get('/formations/{id_formation}/filieres/{id_filiere}', [FormationController::class, 'getFormationAndFiliere']);
 Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
-
 /*
 |--------------------------------------------------------------------------
 | Superviseur Routes
 |--------------------------------------------------------------------------
 */
 Route::get('/superviseurs', [SuperviseurController::class, 'index']);
-Route::get('/superviseurs/by-departement', [SuperviseurController::class, 'getByDepartement']);
-Route::get('/superviseurs/departements', [SuperviseurController::class, 'getAllDepartements']);
+Route::get('/superviseurs/by-service', [SuperviseurController::class, 'getByService']);
+Route::get('/superviseurs/service', [SuperviseurController::class, 'getAllServices']);
 Route::post('/superviseurs', [SuperviseurController::class, 'store']);
-
+Route::delete('/superviseurs/{id}', [SuperviseurController::class, 'destroy']);
+Route::put('/superviseurs/{id}', [SuperviseurController::class, 'update']);
 /*
 |--------------------------------------------------------------------------
 | Professor Routes
