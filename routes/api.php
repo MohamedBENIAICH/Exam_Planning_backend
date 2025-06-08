@@ -153,7 +153,16 @@ Route::get('/departements/{id}', [DepartementController::class, 'show']);
 | Module Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/modules/{id}/name', [ModuleController::class, 'getModuleName']);
+
+Route::prefix('modules')->group(function () {
+    Route::get('modules-with-filieres-formation', [ModuleController::class, 'modulesWithFilieresAndFormationName']);
+    Route::get('/{id}/name', [ModuleController::class, 'getModuleName']);
+    Route::get('/', [ModuleController::class, 'index']);
+    Route::post('/', [ModuleController::class, 'store']);
+    Route::get('/{id}', [ModuleController::class, 'show']);
+    Route::put('/{id}', [ModuleController::class, 'update']);
+    Route::delete('/{id}', [ModuleController::class, 'destroy']);
+});
 
 /*
 |--------------------------------------------------------------------------
