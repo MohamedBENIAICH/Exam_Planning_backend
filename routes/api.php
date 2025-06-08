@@ -8,6 +8,7 @@ use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\SuperviseurController;
 use App\Http\Controllers\FormationController;
+use App\Http\Controllers\FiliereController;
 use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExamClassroomAssignmentController;
 use App\Http\Controllers\ModuleController;
@@ -89,6 +90,20 @@ Route::prefix('classrooms')->group(function () {
 });
 /*
 |--------------------------------------------------------------------------
+| Filiere Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('filieres')->group(function () {
+    Route::get('/', [FiliereController::class, 'index']);
+    Route::get('/filieres-with-details', [FiliereController::class, 'filieresWithDepartementAndFormationNames']);
+    Route::post('/', [FiliereController::class, 'store']);
+    Route::get('/{id}', [FiliereController::class, 'show']);
+    Route::put('/{id}', [FiliereController::class, 'update']);
+    Route::delete('/{id}', [FiliereController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Formation Routes
 |--------------------------------------------------------------------------
 */
@@ -96,6 +111,10 @@ Route::get('/formations', [FormationController::class, 'index']);
 Route::get('/formations/{id_formation}/filieres', [FormationController::class, 'getFilieresByFormation']);
 Route::get('/formations/{id_formation}/filieres/{id_filiere}', [FormationController::class, 'getFormationAndFiliere']);
 Route::get('/formations/{id_formation}/filieres/{id_filiere}/modules/{semestre}', [FormationController::class, 'getModulesByFormationAndSemester']);
+Route::post('/formations', [FormationController::class, 'store']);
+Route::delete('/formations/{id}', [FormationController::class, 'delete']);
+Route::put('/formations/{id}', [FormationController::class, 'update']);
+Route::get('/formations/{id}', [FormationController::class, 'show']);
 /*
 |--------------------------------------------------------------------------
 | Superviseur Routes
@@ -127,6 +146,7 @@ Route::prefix('professeurs')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/departements', [DepartementController::class, 'index']);
+Route::get('/departements/{id}', [DepartementController::class, 'show']);
 
 /*
 |--------------------------------------------------------------------------

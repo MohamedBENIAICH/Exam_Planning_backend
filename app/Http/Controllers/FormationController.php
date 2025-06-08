@@ -128,6 +128,135 @@ class FormationController extends Controller
                 'message' => 'Failed to retrieve formation and filiere',
                 'error' => $e->getMessage()
             ], 500);
+        } 
+       }   /**
+             * Store a newly created formation.
+             *
+             * @param \Illuminate\Http\Request $request
+             * @return \Illuminate\Http\JsonResponse
+             */
+            public function store(Request $request)
+            {
+                try {
+                    $request->validate([
+                        'formation_intitule' => 'required|string|max:255'
+                    ]);
+        
+                    $formation = Formation::create($request->all());
+        
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Formation created successfully',
+                        'data' => $formation
+                    ], 201);
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Validation error',
+                        'errors' => $e->errors()
+                    ], 422);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to create formation',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+        
+            /**
+             * Update the specified formation.
+             *
+             * @param \Illuminate\Http\Request $request
+             * @param int $id
+             * @return \Illuminate\Http\JsonResponse
+             */
+            public function update(Request $request, $id)
+            {
+                try {
+                    $formation = Formation::findOrFail($id);
+        
+                    $request->validate([
+                        'formation_intitule' => 'required|string|max:255'
+                    ]);
+
+                    $formation->update($request->all());
+        
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Formation updated successfully',
+                        'data' => $formation
+                    ]);
+                } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Formation not found'
+                    ], 404);
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Validation error',
+                        'errors' => $e->errors()
+                    ], 422);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to update formation',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+        
+            /**
+             * Remove the specified formation.
+             *
+             * @param int $id
+             * @return \Illuminate\Http\JsonResponse
+             */
+            public function delete($id)
+            {
+                try {
+                    $formation = Formation::findOrFail($id);
+                    $formation->delete();
+        
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Formation deleted successfully'
+                    ]);
+                } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Formation not found'
+                    ], 404);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to delete formation',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            public function show($id)
+    {
+        try {
+            $formation = Formation::find($id);
+            if (!$formation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Formation not found'
+                ], 404);
+            }
+            return response()->json([
+                'status' => 'success',
+                'data' => $formation
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve formation',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
