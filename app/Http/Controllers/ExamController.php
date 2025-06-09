@@ -870,14 +870,83 @@ class ExamController extends Controller
     public function getUpcomingExams()
     {
         try {
-            $today = now()->toDateString();
-            $exams = Exam::where('date_examen', '>=', $today)
+            $now = now();
+            $today = $now->toDateString();
+            $currentTime = $now->format('H:i:s');
+
+            // Get exams that are either:
+            // 1. On a future date, OR
+            // 2. On today's date but haven't finished yet (heure_fin > current time)
+            $exams = Exam::with(['formation', 'filiere', 'module', 'classrooms', 'superviseurs', 'professeurs'])
+                ->where(function ($query) use ($today, $currentTime) {
+                    $query->where('date_examen', '>', $today)
+                        ->orWhere(function ($subQuery) use ($today, $currentTime) {
+                            $subQuery->where('date_examen', '=', $today)
+                                ->where('heure_fin', '>', $currentTime);
+                        });
+                })
                 ->orderBy('date_examen', 'asc')
+                ->orderBy('heure_debut', 'asc')
                 ->get();
+
+            // Transform the data to include names instead of IDs
+            $transformedExams = $exams->map(function ($exam) {
+                // Get the related models
+                $formation = Formation::find($exam->formation);
+                $filiere = Filiere::find($exam->filiere);
+                $module = Module::find($exam->module_id);
+
+                // Calculate duration in minutes
+                $heure_debut = \Carbon\Carbon::parse($exam->heure_debut);
+                $heure_fin = \Carbon\Carbon::parse($exam->heure_fin);
+                $duree = $heure_debut->diffInMinutes($heure_fin);
+
+                // Get classroom names
+                $classroomNames = $exam->classrooms->pluck('nom_du_local')->implode(', ');
+                $locaux = $classroomNames ?: $exam->locaux;
+
+                // Get superviseurs names
+                $superviseursNames = '';
+                if ($exam->superviseurs && is_object($exam->superviseurs) && $exam->superviseurs->count() > 0) {
+                    $superviseursNames = $exam->superviseurs->map(function ($superviseur) {
+                        return $superviseur->prenom . ' ' . $superviseur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->superviseurs) && !empty($exam->superviseurs)) {
+                    $superviseursNames = $exam->superviseurs;
+                }
+
+                // Get professeurs names
+                $professeursNames = '';
+                if ($exam->professeurs && is_object($exam->professeurs) && $exam->professeurs->count() > 0) {
+                    $professeursNames = $exam->professeurs->map(function ($professeur) {
+                        return $professeur->prenom . ' ' . $professeur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->professeurs) && !empty($exam->professeurs)) {
+                    $professeursNames = $exam->professeurs;
+                }
+
+                return [
+                    'id' => $exam->id,
+                    'cycle' => $formation ? $formation->formation_intitule : null,
+                    'formation_name' => $formation ? $formation->formation_intitule : null,
+                    'filiere_name' => $filiere ? $filiere->filiere_intitule : null,
+                    'module_name' => $module ? $module->module_intitule : null,
+                    'semestre' => $exam->semestre,
+                    'date_examen' => date('Y-m-d', strtotime($exam->date_examen)),
+                    'heure_debut' => date('H:i', strtotime($exam->heure_debut)),
+                    'heure_fin' => date('H:i', strtotime($exam->heure_fin)),
+                    'duree' => $duree,
+                    'locaux' => $locaux,
+                    'superviseurs' => $superviseursNames,
+                    'professeurs' => $professeursNames,
+                    'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
+                    'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
+                ];
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => $exams
+                'data' => $transformedExams
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -926,15 +995,83 @@ class ExamController extends Controller
     public function getPassedExams()
     {
         try {
-            $today = now()->toDateString();
-            $exams = Exam::where('date_examen', '<', $today)
-                ->orderBy('date_examen', 'desc')
+            $now = now();
+            $today = $now->toDateString();
+            $currentTime = $now->format('H:i:s');
+
+            // Get exams that are either:
+            // 1. On a past date, OR
+            // 2. On today's date but have finished (heure_fin <= current time)
+            $exams = Exam::with(['formation', 'filiere', 'module', 'classrooms', 'superviseurs', 'professeurs'])
+                ->where(function ($query) use ($today, $currentTime) {
+                    $query->where('date_examen', '<', $today)
+                        ->orWhere(function ($subQuery) use ($today, $currentTime) {
+                            $subQuery->where('date_examen', '=', $today)
+                                ->where('heure_fin', '<=', $currentTime);
+                        });
+                })
+                ->orderBy('created_at', 'desc') // Tri par ordre de création (plus récents en premier)
                 ->get();
+
+            // Transform the data to include names instead of IDs
+            $transformedExams = $exams->map(function ($exam) {
+                // Get the related models
+                $formation = Formation::find($exam->formation);
+                $filiere = Filiere::find($exam->filiere);
+                $module = Module::find($exam->module_id);
+
+                // Calculate duration in minutes
+                $heure_debut = \Carbon\Carbon::parse($exam->heure_debut);
+                $heure_fin = \Carbon\Carbon::parse($exam->heure_fin);
+                $duree = $heure_debut->diffInMinutes($heure_fin);
+
+                // Get classroom names
+                $classroomNames = $exam->classrooms->pluck('nom_du_local')->implode(', ');
+                $locaux = $classroomNames ?: $exam->locaux;
+
+                // Get superviseurs names
+                $superviseursNames = '';
+                if ($exam->superviseurs && is_object($exam->superviseurs) && $exam->superviseurs->count() > 0) {
+                    $superviseursNames = $exam->superviseurs->map(function ($superviseur) {
+                        return $superviseur->prenom . ' ' . $superviseur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->superviseurs) && !empty($exam->superviseurs)) {
+                    $superviseursNames = $exam->superviseurs;
+                }
+
+                // Get professeurs names
+                $professeursNames = '';
+                if ($exam->professeurs && is_object($exam->professeurs) && $exam->professeurs->count() > 0) {
+                    $professeursNames = $exam->professeurs->map(function ($professeur) {
+                        return $professeur->prenom . ' ' . $professeur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->professeurs) && !empty($exam->professeurs)) {
+                    $professeursNames = $exam->professeurs;
+                }
+
+                return [
+                    'id' => $exam->id,
+                    'cycle' => $formation ? $formation->formation_intitule : null,
+                    'formation_name' => $formation ? $formation->formation_intitule : null,
+                    'filiere_name' => $filiere ? $filiere->filiere_intitule : null,
+                    'module_name' => $module ? $module->module_intitule : null,
+                    'semestre' => $exam->semestre,
+                    'date_examen' => date('Y-m-d', strtotime($exam->date_examen)),
+                    'heure_debut' => date('H:i', strtotime($exam->heure_debut)),
+                    'heure_fin' => date('H:i', strtotime($exam->heure_fin)),
+                    'duree' => $duree,
+                    'locaux' => $locaux,
+                    'superviseurs' => $superviseursNames,
+                    'professeurs' => $professeursNames,
+                    'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
+                    'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
+                ];
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => $exams,
-                'count' => $exams->count()
+                'data' => $transformedExams,
+                'count' => $transformedExams->count()
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error in getPassedExams: ' . $e->getMessage());
@@ -989,7 +1126,7 @@ class ExamController extends Controller
     {
         try {
             // Fetch exams with their related data
-            $exams = Exam::with(['formation', 'filiere', 'module'])->get();
+            $exams = Exam::with(['formation', 'filiere', 'module', 'classrooms', 'superviseurs', 'professeurs'])->get();
 
             // Transform the data to include names instead of IDs
             $transformedExams = $exams->map(function ($exam) {
@@ -998,8 +1135,38 @@ class ExamController extends Controller
                 $filiere = Filiere::find($exam->filiere);
                 $module = Module::find($exam->module_id);
 
+                // Calculate duration in minutes
+                $heure_debut = \Carbon\Carbon::parse($exam->heure_debut);
+                $heure_fin = \Carbon\Carbon::parse($exam->heure_fin);
+                $duree = $heure_debut->diffInMinutes($heure_fin);
+
+                // Get classroom names
+                $classroomNames = $exam->classrooms->pluck('nom_du_local')->implode(', ');
+                $locaux = $classroomNames ?: $exam->locaux;
+
+                // Get superviseurs names
+                $superviseursNames = '';
+                if ($exam->superviseurs && is_object($exam->superviseurs) && $exam->superviseurs->count() > 0) {
+                    $superviseursNames = $exam->superviseurs->map(function ($superviseur) {
+                        return $superviseur->prenom . ' ' . $superviseur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->superviseurs) && !empty($exam->superviseurs)) {
+                    $superviseursNames = $exam->superviseurs;
+                }
+
+                // Get professeurs names
+                $professeursNames = '';
+                if ($exam->professeurs && is_object($exam->professeurs) && $exam->professeurs->count() > 0) {
+                    $professeursNames = $exam->professeurs->map(function ($professeur) {
+                        return $professeur->prenom . ' ' . $professeur->nom;
+                    })->implode(', ');
+                } elseif (is_string($exam->professeurs) && !empty($exam->professeurs)) {
+                    $professeursNames = $exam->professeurs;
+                }
+
                 return [
                     'id' => $exam->id,
+                    'cycle' => $formation ? $formation->formation_intitule : null,
                     'formation_name' => $formation ? $formation->formation_intitule : null,
                     'filiere_name' => $filiere ? $filiere->filiere_intitule : null,
                     'module_name' => $module ? $module->module_intitule : null,
@@ -1007,8 +1174,12 @@ class ExamController extends Controller
                     'date_examen' => date('Y-m-d', strtotime($exam->date_examen)),
                     'heure_debut' => date('H:i', strtotime($exam->heure_debut)),
                     'heure_fin' => date('H:i', strtotime($exam->heure_fin)),
-                    'locaux' => $exam->locaux,
-                    'superviseurs' => $exam->superviseurs
+                    'duree' => $duree,
+                    'locaux' => $locaux,
+                    'superviseurs' => $superviseursNames,
+                    'professeurs' => $professeursNames,
+                    'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
+                    'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
                 ];
             });
 
