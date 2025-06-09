@@ -41,6 +41,9 @@ Route::prefix('exams')->group(function () {
     Route::get('/upcoming', [ExamController::class, 'getUpcomingExams']);
     Route::get('/passed', [ExamController::class, 'getPassedExams']);
 
+    // PDF download route
+    Route::get('/{id}/download-pdf', [ExamController::class, 'downloadPdf']);
+
     // Standard CRUD routes
     Route::get('/', [ExamController::class, 'index']);
     Route::post('/', [ExamController::class, 'store']);

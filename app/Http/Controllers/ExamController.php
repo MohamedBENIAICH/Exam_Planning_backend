@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
  * @OA\Tag(
@@ -741,8 +742,8 @@ class ExamController extends Controller
 
             // Sync classrooms if provided
             if ($request->has('classroom_ids')) {
-                $classroomIds = is_array($request->classroom_ids) 
-                    ? array_map('intval', $request->classroom_ids) 
+                $classroomIds = is_array($request->classroom_ids)
+                    ? array_map('intval', $request->classroom_ids)
                     : [];
 
                 $exam->classrooms()->sync($classroomIds);
@@ -768,8 +769,8 @@ class ExamController extends Controller
 
             // Sync supervisors
             if ($request->has('superviseur_ids')) {
-                $superviseurIds = is_array($request->superviseur_ids) 
-                    ? array_map('intval', $request->superviseur_ids) 
+                $superviseurIds = is_array($request->superviseur_ids)
+                    ? array_map('intval', $request->superviseur_ids)
                     : [];
 
                 $exam->superviseurs()->sync($superviseurIds);
@@ -814,10 +815,9 @@ class ExamController extends Controller
                 'message' => 'Exam updated successfully',
                 'data' => $exam
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             // Log the error
             DB::table('logs')->insert([
                 'message' => "Error updating exam {$id}: " . $e->getMessage(),
@@ -1022,6 +1022,186 @@ class ExamController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve exams with names',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/exams/{id}/download-pdf",
+     *     summary="Download exam PDF with student list",
+     *     tags={"Exams"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Exam ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="PDF generated and downloaded successfully",
+     *         @OA\MediaType(
+     *             mediaType="application/pdf",
+     *             @OA\Schema(type="string", format="binary")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
+     */
+    public function downloadPdf($id)
+    {
+        try {
+            // Récupérer l'examen avec toutes les relations nécessaires
+            $exam = Exam::with([
+                'formation',
+                'filiere',
+                'module',
+                'students',
+                'superviseurs',
+                'professeurs'
+            ])->findOrFail($id);
+
+            // Debug: Vérifier les données récupérées
+            Log::info('Exam data for PDF generation:', [
+                'exam_id' => $exam->id,
+                'students_type' => gettype($exam->students),
+                'students_count' => is_object($exam->students) ? $exam->students->count() : 'not a collection',
+                'superviseurs_type' => gettype($exam->superviseurs),
+                'superviseurs_value' => $exam->superviseurs,
+                'professeurs_type' => gettype($exam->professeurs),
+                'professeurs_value' => $exam->professeurs
+            ]);
+
+            // Récupérer les données des relations
+            $formation = Formation::find($exam->formation);
+            $filiere = Filiere::find($exam->filiere);
+            $module = Module::find($exam->module_id);
+
+            // S'assurer que students est une collection
+            $students = collect();
+            if ($exam->students && is_object($exam->students) && method_exists($exam->students, 'count')) {
+                $students = $exam->students;
+            } else {
+                // Si ce n'est pas une collection, essayer de récupérer les étudiants manuellement
+                $students = Student::whereHas('exams', function ($query) use ($exam) {
+                    $query->where('exam_id', $exam->id);
+                })->get();
+            }
+
+            // S'assurer que superviseurs est une collection
+            $superviseurs = collect();
+            if ($exam->superviseurs) {
+                if (is_object($exam->superviseurs) && method_exists($exam->superviseurs, 'count')) {
+                    // Si c'est une relation many-to-many
+                    $superviseurs = $exam->superviseurs;
+                } else if (is_string($exam->superviseurs) && !empty($exam->superviseurs)) {
+                    // Si c'est une chaîne de caractères (noms séparés par des virgules)
+                    $superviseurNames = explode(',', $exam->superviseurs);
+                    $superviseurs = collect($superviseurNames)->map(function ($name) {
+                        $nameParts = explode(' ', trim($name));
+                        return (object) [
+                            'nom' => isset($nameParts[0]) ? $nameParts[0] : trim($name),
+                            'prenom' => isset($nameParts[1]) ? $nameParts[1] : '',
+                            'email' => ''
+                        ];
+                    });
+                } else {
+                    // Essayer de récupérer via la relation many-to-many si elle existe
+                    try {
+                        $superviseurs = Superviseur::whereHas('exams', function ($query) use ($exam) {
+                            $query->where('exam_id', $exam->id);
+                        })->get();
+                    } catch (\Exception $e) {
+                        // Si la relation n'existe pas, on garde une collection vide
+                        $superviseurs = collect();
+                    }
+                }
+            }
+
+            // S'assurer que professeurs est une collection
+            $professeurs = collect();
+            if ($exam->professeurs) {
+                if (is_object($exam->professeurs) && method_exists($exam->professeurs, 'count')) {
+                    // Si c'est une relation many-to-many
+                    $professeurs = $exam->professeurs;
+                } else if (is_string($exam->professeurs) && !empty($exam->professeurs)) {
+                    // Si c'est une chaîne de caractères (noms séparés par des virgules)
+                    $professeurNames = explode(',', $exam->professeurs);
+                    $professeurs = collect($professeurNames)->map(function ($name) {
+                        $nameParts = explode(' ', trim($name));
+                        return (object) [
+                            'nom' => isset($nameParts[0]) ? $nameParts[0] : trim($name),
+                            'prenom' => isset($nameParts[1]) ? $nameParts[1] : '',
+                            'email' => ''
+                        ];
+                    });
+                } else {
+                    // Essayer de récupérer via la relation many-to-many si elle existe
+                    try {
+                        $professeurs = Professeur::whereHas('exams', function ($query) use ($exam) {
+                            $query->where('exam_id', $exam->id);
+                        })->get();
+                    } catch (\Exception $e) {
+                        // Si la relation n'existe pas, on garde une collection vide
+                        $professeurs = collect();
+                    }
+                }
+            }
+
+            // Préparer les données pour le PDF
+            $data = [
+                'exam' => $exam,
+                'formation' => $formation,
+                'filiere' => $filiere,
+                'module' => $module,
+                'students' => $students,
+                'superviseurs' => $superviseurs,
+                'professeurs' => $professeurs,
+                'date_examen' => \Carbon\Carbon::parse($exam->date_examen)->format('d/m/Y'),
+                'heure_debut' => \Carbon\Carbon::parse($exam->heure_debut)->format('H:i'),
+                'heure_fin' => \Carbon\Carbon::parse($exam->heure_fin)->format('H:i'),
+            ];
+
+            // Debug: Vérifier les données finales
+            Log::info('Final data for PDF template:', [
+                'students_count' => $data['students']->count(),
+                'superviseurs_count' => $data['superviseurs']->count(),
+                'professeurs_count' => $data['professeurs']->count()
+            ]);
+
+            // Générer le PDF
+            $pdf = PDF::loadView('pdfs.exam-convocation', $data);
+
+            // Configurer le PDF
+            $pdf->setPaper('A4', 'portrait');
+            $pdf->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'Arial'
+            ]);
+
+            // Nom du fichier (on nettoie la date et le nom du module)
+            $moduleName = $module ? preg_replace('/[\\\\\/\:"\*\?<>\|]+/', '-', $module->module_intitule) : 'Module';
+            $dateExamen = preg_replace('/[\\\\\/\:"\*\?<>\|]+/', '-', $data['date_examen']);
+            $filename = 'Convocation_Examen_' . $moduleName . '_' . $dateExamen . '.pdf';
+
+            // Télécharger le PDF
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            Log::error('Error generating exam PDF: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate PDF',
                 'error' => $e->getMessage()
             ], 500);
         }
