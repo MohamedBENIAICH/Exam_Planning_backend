@@ -571,7 +571,7 @@ class ExamController extends Controller
     public function getLatestExams()
     {
         try {
-            $latestExams = Exam::with('students')
+            $latestExams = Exam::with(['students', 'superviseurs', 'professeurs'])
                 ->orderBy('id', 'desc')
                 ->take(5)
                 ->get();
