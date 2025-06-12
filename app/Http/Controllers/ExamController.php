@@ -1377,4 +1377,32 @@ class ExamController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Count the number of passed exams (date_examen < sysdate).
+     */
+    public function countPassedExams()
+    {
+        $today = now()->toDateString();
+        $count = Exam::where('date_examen', '<', $today)->count();
+
+        return response()->json([
+            'status' => 'success',
+            'count' => $count
+        ]);
+    }
+
+    /**
+     * Count the number of upcoming exams (date_examen >= sysdate).
+     */
+    public function countUpcomingExams()
+    {
+        $today = now()->toDateString();
+        $count = Exam::where('date_examen', '>=', $today)->count();
+
+        return response()->json([
+            'status' => 'success',
+            'count' => $count
+        ]);
+    }
 }

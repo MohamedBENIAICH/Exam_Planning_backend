@@ -42,6 +42,8 @@ Route::prefix('exams')->group(function () {
     Route::get('/latest', [ExamController::class, 'getLatestExams']);
     Route::get('/upcoming', [ExamController::class, 'getUpcomingExams']);
     Route::get('/passed', [ExamController::class, 'getPassedExams']);
+    Route::get('/count-passed', [ExamController::class, 'countPassedExams']);
+    Route::get('/count-upcoming', [ExamController::class, 'countUpcomingExams']);
 
     // PDF download route
     Route::get('/{id}/download-pdf', [ExamController::class, 'downloadPdf']);
