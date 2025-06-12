@@ -14,6 +14,8 @@ use App\Http\Controllers\ExamClassroomAssignmentController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ExamNotificationController;
 use App\Http\Controllers\ProfesseurController;
+use App\Http\Controllers\CandidatController;
+use App\Http\Controllers\ConcoursController;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,6 +139,7 @@ Route::put('/superviseurs/{id}', [SuperviseurController::class, 'update']);
 Route::prefix('professeurs')->group(function () {
     Route::get('/', [ProfesseurController::class, 'index']);
     Route::post('/', [ProfesseurController::class, 'store']);
+    Route::get('/count', [ProfesseurController::class, 'count']);
     Route::get('/by-departement', [ProfesseurController::class, 'getByDepartement']);
     Route::get('/departements', [ProfesseurController::class, 'getAllDepartements']);
     Route::delete('/{id}', [ProfesseurController::class, 'destroy']);
@@ -226,3 +229,37 @@ Route::post('/test-create-exam-with-classrooms', function (Request $request) {
 Route::post('/exams/{exam}/send-invitations', [ExamNotificationController::class, 'sendNotifications']);
 
 Route::get('/api/documentation', '\L5Swagger\Http\Controllers\SwaggerController@api')->name('l5-swagger.default.docs');
+
+/*
+|--------------------------------------------------------------------------
+| Candidat Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('candidats')->group(function () {
+    Route::get('/', [CandidatController::class, 'index']);
+    Route::post('/', [CandidatController::class, 'store']);
+    Route::get('/{id}', [CandidatController::class, 'show']);
+    Route::put('/{id}', [CandidatController::class, 'update']);
+    Route::delete('/{id}', [CandidatController::class, 'destroy']);
+});
+/*
+|--------------------------------------------------------------------------
+| Concours Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('concours')->group(function () {
+    Route::get('/', [ConcoursController::class, 'index']);
+    Route::post('/', [ConcoursController::class, 'store']);
+    Route::get('/latest', [ConcoursController::class, 'latest']);
+    Route::get('/{id}', [ConcoursController::class, 'show']);
+    Route::put('/{id}', [ConcoursController::class, 'update']);
+    Route::delete('/{id}', [ConcoursController::class, 'destroy']);
+});
+
+Route::get('/test-public', function () {
+    return response()->json(['status' => 'ok']);
+});
+
+Route::fallback(function () {
+    return response()->json(['message' => 'API route not found.'], 404);
+});

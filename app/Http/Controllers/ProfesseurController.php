@@ -107,7 +107,7 @@ class ProfesseurController extends Controller
         return response()->json($professeurs);
     }
 
-        /**
+    /**
      * @OA\Post(
      *     path="/api/professeurs",
      *     summary="Create a new professor",
@@ -143,7 +143,7 @@ class ProfesseurController extends Controller
      *     )
      * )
      */
-    
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -158,7 +158,7 @@ class ProfesseurController extends Controller
         return response()->json($professeur, 201);
     }
 
-        /**
+    /**
      * @OA\Delete(
      *     path="/api/professeurs/{id}",
      *     summary="Delete a professor by ID",
@@ -187,66 +187,86 @@ class ProfesseurController extends Controller
 
         return response()->json(['message' => 'Professor deleted successfully'], 200);
     }
-    
+
     /**
-         * @OA\Put(
-         *     path="/api/professeurs/{id}",
-         *     summary="Update a professor by ID",
-         *     tags={"Professeurs"},
-         *     @OA\Parameter(
-         *         name="id",
-         *         in="path",
-         *         required=true,
-         *         description="ID of professor to update",
-         *         @OA\Schema(type="integer")
-         *     ),
-         *     @OA\RequestBody(
-         *         required=true,
-         *         @OA\JsonContent(
-         *             @OA\Property(property="email", type="string", format="email", description="Professor's email address"),
-         *             @OA\Property(property="nom", type="string", description="Professor's last name"),
-         *             @OA\Property(property="prenom", type="string", description="Professor's first name"),
-         *             @OA\Property(property="departement", type="string", description="Professor's department")
-         *         )
-         *     ),
-         *     @OA\Response(
-         *         response=200,
-         *         description="Professor updated successfully",
-         *         @OA\JsonContent(
-         *             @OA\Property(property="id", type="integer"),
-         *             @OA\Property(property="email", type="string"),
-         *             @OA\Property(property="nom", type="string"),
-         *             @OA\Property(property="prenom", type="string"),
-         *             @OA\Property(property="departement", type="string")
-         *         )
-         *     ),
-         *     @OA\Response(
-         *         response=404,
-         *         description="Professor not found"
-         *     ),
-         *     @OA\Response(
-         *         response=422,
-         *         description="Validation error",
-         *         @OA\JsonContent(
-         *             @OA\Property(property="message", type="string"),
-         *             @OA\Property(property="errors", type="object")
-         *         )
-         *     )
-         * )
-         */
-        public function update(Request $request, $id)
-        {
-            $professeur = Professeur::findOrFail($id);
-    
-            $validatedData = $request->validate([
-                'email' => 'nullable|email|unique:professeurs,email,' . $id,
-                'nom' => 'nullable|string',
-                'prenom' => 'nullable|string',
-                'departement' => 'nullable|string'
-            ]);
-    
-            $professeur->update($validatedData);
-    
-            return response()->json($professeur, 200);
-        }
+     * @OA\Put(
+     *     path="/api/professeurs/{id}",
+     *     summary="Update a professor by ID",
+     *     tags={"Professeurs"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of professor to update",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="email", type="string", format="email", description="Professor's email address"),
+     *             @OA\Property(property="nom", type="string", description="Professor's last name"),
+     *             @OA\Property(property="prenom", type="string", description="Professor's first name"),
+     *             @OA\Property(property="departement", type="string", description="Professor's department")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Professor updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="email", type="string"),
+     *             @OA\Property(property="nom", type="string"),
+     *             @OA\Property(property="prenom", type="string"),
+     *             @OA\Property(property="departement", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Professor not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="errors", type="object")
+     *         )
+     *     )
+     * )
+     */
+    public function update(Request $request, $id)
+    {
+        $professeur = Professeur::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'email' => 'nullable|email|unique:professeurs,email,' . $id,
+            'nom' => 'nullable|string',
+            'prenom' => 'nullable|string',
+            'departement' => 'nullable|string'
+        ]);
+
+        $professeur->update($validatedData);
+
+        return response()->json($professeur, 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/professeurs/count",
+     *     summary="Get total number of professors",
+     *     tags={"Professeurs"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total number of professors",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="total", type="integer")
+     *         )
+     *     )
+     * )
+     */
+    public function count()
+    {
+        $count = Professeur::count();
+        return response()->json(['status' => 'success', 'count' => $count]);
+    }
 }
