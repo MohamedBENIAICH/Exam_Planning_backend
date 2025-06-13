@@ -91,7 +91,7 @@
 
         <p>Cordialement,<br>
             <strong>L'équipe pédagogique</strong><br>
-            Faculté des Sciences et Techniques
+            Faculté des Sciences et Techniques de Marrakech
         </p>
     </div>
 

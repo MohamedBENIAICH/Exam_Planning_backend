@@ -87,13 +87,6 @@
             background-color: #f2f2f2;
         }
 
-        .footer {
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 14px;
-            color: #666;
-        }
 
         .important {
             background-color: #fff3cd;
@@ -107,21 +100,29 @@
             margin-top: 50px;
             text-align: right;
         }
-
-        .signature-line {
-            border-top: 1px solid #333;
-            width: 200px;
-            margin-top: 50px;
-            margin-left: auto;
-        }
     </style>
 </head>
 
 <body>
     <div class="header">
-        <div class="logo">FST - Faculté des Sciences et Techniques</div>
-        <div class="title">CONVOCATION AU CONCOURS</div>
-        <div class="subtitle">Année universitaire {{ $concours['year'] }}</div>
+        <<div class="logo">
+            @php
+                $logoPath = public_path('images/logofst.jpeg');
+                $logoBase64 = '';
+                if (file_exists($logoPath)) {
+                    $logoBase64 = base64_encode(file_get_contents($logoPath));
+                }
+            @endphp
+            @if ($logoBase64)
+                <img src="data:image/jpeg;base64,{{ $logoBase64 }}" alt="Logo de la faculté"
+                    style="max-width: 200px; height: auto;">
+            @else
+                <img src="{{ asset('images/logofst.jpeg') }}" alt="Logo de la faculté"
+                    style="max-width: 200px; height: auto;">
+            @endif
+    </div>
+    <div class="title">CONVOCATION AU CONCOURS</div>
+    <div class="subtitle">Année universitaire {{ $concours['year'] }}</div>
     </div>
 
     <div class="content">
@@ -173,7 +174,7 @@
         </div>
 
         <div class="important">
-            <h4>⚠️ IMPORTANT :</h4>
+            <h4>IMPORTANT :</h4>
             <ul>
                 <li>Présentez-vous <strong>30 minutes avant l'heure de début</strong></li>
                 <li>Apportez <strong>cette convocation</strong> et votre <strong>pièce d'identité</strong></li>
@@ -197,11 +198,6 @@
         <p>Signature et cachet</p>
     </div>
 
-    <div class="footer">
-        <p><strong>Faculté des Sciences et Techniques</strong></p>
-        <p>Pour toute question, veuillez contacter le secrétariat de votre formation.</p>
-        <p>Cette convocation est obligatoire pour participer au concours.</p>
-    </div>
 </body>
 
 </html>

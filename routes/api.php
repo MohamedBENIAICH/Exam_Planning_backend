@@ -261,6 +261,7 @@ Route::prefix('concours')->group(function () {
     // Routes pour les convocations
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
+    Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);
 });
 
 Route::get('/test-public', function () {

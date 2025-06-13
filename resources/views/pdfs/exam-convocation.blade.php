@@ -295,7 +295,7 @@
 
     <div class="footer">
         <p>Fait à Marrakech le {{ \Carbon\Carbon::now()->format('d/m/Y à H:i') }}</p>
-        <p>&copy; Faculté des Sciences et Techniques - Système de Gestion des Examens</p>
+        <p>&copy; Faculté des Sciences et Techniques de Marrakech- Système de Gestion des Examens</p>
     </div>
 </body>
 

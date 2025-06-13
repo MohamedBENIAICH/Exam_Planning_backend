@@ -7,6 +7,7 @@ use App\Models\Candidat;
 use App\Services\ConcoursNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConcoursController extends Controller
 {
@@ -232,6 +233,47 @@ class ConcoursController extends Controller
 
             return response()->json([
                 'message' => 'Erreur lors de l\'envoi des notifications de surveillance',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download a PDF report for a specific concours.
+     */
+    public function downloadReport($id)
+    {
+        try {
+            $concours = Concours::with([
+                'candidats',
+                'superviseurs',
+                'professeurs'
+            ])->findOrFail($id);
+
+            // Générer le PDF
+            $pdf = Pdf::loadView('pdf.concours_report', compact('concours'));
+
+            // Configurer le PDF (taille, orientation)
+            $pdf->setPaper('A4', 'portrait');
+            $pdf->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'Arial'
+            ]);
+
+            // Nom du fichier
+            $filename = 'Compte_Rendu_Concours_' . str_replace(' ', '_', $concours->titre) . '_' . \Carbon\Carbon::parse($concours->date_concours)->format('Ymd') . '.pdf';
+
+            // Télécharger le PDF
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            Log::error('Error generating concours report PDF: ' . $e->getMessage(), [
+                'concours_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate PDF report',
                 'error' => $e->getMessage()
             ], 500);
         }
