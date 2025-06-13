@@ -22,28 +22,6 @@ return new class extends Migration
             $table->string('type_epreuve'); // 'écrit' or 'oral'
             $table->timestamps();
         });
-
-        // Pivot tables for relations
-        Schema::create('concours_candidat', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('concours_id')->constrained('concours')->onDelete('cascade');
-            $table->foreignId('candidat_id')->constrained('candidats')->onDelete('cascade');
-            $table->timestamps();
-        });
-
-        Schema::create('concours_superviseur', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('concours_id')->constrained('concours')->onDelete('cascade');
-            $table->foreignId('superviseur_id')->constrained('superviseurs')->onDelete('cascade');
-            $table->timestamps();
-        });
-
-        Schema::create('concours_professeur', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('concours_id')->constrained('concours')->onDelete('cascade');
-            $table->foreignId('professeur_id')->constrained('professeurs')->onDelete('cascade');
-            $table->timestamps();
-        });
     }
 
     /**
@@ -51,9 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('concours_professeur');
-        Schema::dropIfExists('concours_superviseur');
-        Schema::dropIfExists('concours_candidat');
         Schema::dropIfExists('concours');
     }
 };

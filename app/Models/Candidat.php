@@ -16,4 +16,9 @@ class Candidat extends Model
         'prenom',
         'email',
     ];
+
+    public function concours()
+    {
+        return $this->belongsToMany(Concours::class, 'concours_candidat');
+    }
 }

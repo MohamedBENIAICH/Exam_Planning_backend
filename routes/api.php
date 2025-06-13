@@ -16,6 +16,7 @@ use App\Http\Controllers\ExamNotificationController;
 use App\Http\Controllers\ProfesseurController;
 use App\Http\Controllers\CandidatController;
 use App\Http\Controllers\ConcoursController;
+use App\Http\Controllers\SetupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -256,6 +257,10 @@ Route::prefix('concours')->group(function () {
     Route::get('/{id}', [ConcoursController::class, 'show']);
     Route::put('/{id}', [ConcoursController::class, 'update']);
     Route::delete('/{id}', [ConcoursController::class, 'destroy']);
+
+    // Routes pour les convocations
+    Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
+    Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
 });
 
 Route::get('/test-public', function () {
@@ -264,4 +269,14 @@ Route::get('/test-public', function () {
 
 Route::fallback(function () {
     return response()->json(['message' => 'API route not found.'], 404);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Setup Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('setup')->group(function () {
+    Route::post('/create-tables', [SetupController::class, 'createMissingTables']);
+    Route::get('/check-tables', [SetupController::class, 'checkTables']);
 });
