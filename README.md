@@ -1,6 +1,6 @@
 # FST Digital Backend
 
-## Une API backend robuste pour la gestion des examens universitaires.
+## Une API backend robuste pour la gestion des examens et concours universitaires.
 
 Ce projet est une API backend développée avec Laravel, conçue pour gérer la planification, l'organisation et le suivi des examens au sein d'une institution universitaire. Il fournit les services nécessaires pour le frontend React, gérant les données des étudiants, professeurs, salles de classe, examens, concours, et bien plus encore.
 
@@ -128,6 +128,8 @@ Exam_Planning_backend/
 │   ├── migrations/       # Fichiers de migration de la base de données
 │   └── seeders/          # Classes pour peupler la base de données
 ├── public/               # Point d'entrée public de l'application
+├── resources/
+    ├── views             #Contient nos vues blades plus précisement les vues pour envoyer les convocations aux étudiants, aux professeurs et superviseurs. Elle inclut                                aussi la vue pour avoir le rapport total d'un examen ou d'un concours.
 ├── routes/               # Définition des routes (api.php pour l'API)
 ├── storage/              # Stockage des fichiers générés par l'application
 ├── tests/                # Tests unitaires et fonctionnels
