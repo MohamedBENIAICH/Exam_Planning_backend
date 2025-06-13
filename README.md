@@ -129,7 +129,7 @@ Exam_Planning_backend/
 │   └── seeders/          # Classes pour peupler la base de données
 ├── public/               # Point d'entrée public de l'application
 ├── resources/
-    ├── views             #Contient nos vues blades plus précisement les vues pour envoyer les convocations aux étudiants, aux professeurs et superviseurs. Elle inclut                                aussi la vue pour avoir le rapport total d'un examen ou d'un concours.
+    ├── views             #Contient nos vues blades plus précisement les vues pour envoyer les convocations aux étudiants, aux professeurs et superviseurs. Elle inclut aussi la vue pour avoir le rapport total d'un examen ou d'un concours.
 ├── routes/               # Définition des routes (api.php pour l'API)
 ├── storage/              # Stockage des fichiers générés par l'application
 ├── tests/                # Tests unitaires et fonctionnels
