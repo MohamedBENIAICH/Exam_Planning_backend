@@ -61,6 +61,16 @@ cd Exam_Planning_backend
     DB_DATABASE=exam_planning_db
     DB_USERNAME=root
     DB_PASSWORD=
+    ------------------------------
+    N'oubliez pas aussi de configurer la partie de gmail smtp comme suit:
+    MAIL_MAILER=smtp
+    MAIL_HOST=smtp.gmail.com
+    MAIL_PORT=465
+    MAIL_USERNAME=your_email
+    MAIL_PASSWORD=your_app_password
+    MAIL_ENCRYPTION=ssl
+    MAIL_FROM_ADDRESS="your_email"
+    MAIL_FROM_NAME="FST Gestion Examen"
     ```
 
     Assurez-vous de créer une base de données nommée `exam_planning_db` (ou le nom que vous avez choisi) dans votre serveur MySQL.
@@ -147,10 +157,9 @@ Le backend expose une API REST sur `http://localhost:8000`. Les points d'API son
 -   **Problèmes de dépendances ?**
     -   Exécutez `composer install` à nouveau pour vous assurer que toutes les dépendances sont correctement installées.
 
-## Contribution
+## Contributeurs et Contribution
+*   [MohamedBENIAICH](https://github.com/MohamedBENIAICH)
+*   [DiarraIbra](https://github.com/DiarraIbra)
 
-N'hésitez pas à contribuer à ce projet en ouvrant des issues ou des pull requests. Veuillez suivre les conventions de codage Laravel.
+N'hésitez pas à contribuer à ce projet en ouvrant des issues ou des pull requests. Veuillez suivre les conventions de codage Laravel
 
-## Licence
-
-Ce projet est sous licence MIT.
