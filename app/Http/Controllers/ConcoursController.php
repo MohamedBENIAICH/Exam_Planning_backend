@@ -48,6 +48,19 @@ class ConcoursController extends Controller
             'professeurs.*' => 'integer|exists:professeurs,id',
         ]);
 
+        // Vérifier la disponibilité des salles
+        if ($validated['locaux']) {
+            $locaux = explode(',', $validated['locaux']);
+            $conflicts = $this->checkSalleAvailability($validated['date_concours'], $validated['heure_debut'], $validated['heure_fin'], $locaux);
+
+            if (!empty($conflicts)) {
+                return response()->json([
+                    'message' => 'Conflit de disponibilité des salles',
+                    'conflicts' => $conflicts
+                ], 409);
+            }
+        }
+
         $concours = Concours::create($validated);
 
         // Process and attach candidats
@@ -115,19 +128,61 @@ class ConcoursController extends Controller
             'heure_fin' => 'sometimes|required',
             'locaux' => 'nullable|string',
             'type_epreuve' => 'sometimes|required|in:écrit,oral',
-            'candidats' => 'array',
-            'candidats.*' => 'integer|exists:candidats,id',
-            'superviseurs' => 'array',
+            'candidats' => 'nullable|array',
+            'candidats.*.CNE' => 'required_with:candidats|string|max:255',
+            'candidats.*.CIN' => 'required_with:candidats|string|max:255',
+            'candidats.*.nom' => 'required_with:candidats|string|max:255',
+            'candidats.*.prenom' => 'required_with:candidats|string|max:255',
+            'candidats.*.email' => 'required_with:candidats|email|max:255',
+            'superviseurs' => 'nullable|array',
             'superviseurs.*' => 'integer|exists:superviseurs,id',
-            'professeurs' => 'array',
+            'professeurs' => 'nullable|array',
             'professeurs.*' => 'integer|exists:professeurs,id',
         ]);
 
+        // Vérifier la disponibilité des salles (en excluant le concours actuel)
+        if (isset($validated['locaux']) && $validated['locaux']) {
+            $locaux = explode(',', $validated['locaux']);
+            $conflicts = $this->checkSalleAvailability(
+                $validated['date_concours'] ?? $concours->date_concours,
+                $validated['heure_debut'] ?? $concours->heure_debut,
+                $validated['heure_fin'] ?? $concours->heure_fin,
+                $locaux,
+                $id // Exclure le concours actuel
+            );
+
+            if (!empty($conflicts)) {
+                return response()->json([
+                    'message' => 'Conflit de disponibilité des salles',
+                    'conflicts' => $conflicts
+                ], 409);
+            }
+        }
+
+        // Remove candidats from validated data before updating the concours
+        $candidatsData = $validated['candidats'] ?? null;
+        unset($validated['candidats']);
+
         $concours->update($validated);
 
-        if (isset($validated['candidats'])) {
-            $concours->candidats()->sync($validated['candidats']);
+        // Process and attach candidats
+        if (isset($candidatsData)) {
+            $candidatIds = [];
+            foreach ($candidatsData as $candidatData) {
+                $candidat = Candidat::firstOrCreate(
+                    ['CNE' => $candidatData['CNE']],
+                    [
+                        'CIN' => $candidatData['CIN'],
+                        'nom' => $candidatData['nom'],
+                        'prenom' => $candidatData['prenom'],
+                        'email' => $candidatData['email'],
+                    ]
+                );
+                $candidatIds[] = $candidat->id;
+            }
+            $concours->candidats()->sync($candidatIds);
         }
+
         if (isset($validated['superviseurs'])) {
             $concours->superviseurs()->sync($validated['superviseurs']);
         }
@@ -136,6 +191,17 @@ class ConcoursController extends Controller
         }
 
         $concours->load(['candidats', 'superviseurs', 'professeurs']);
+
+        // Envoyer automatiquement les notifications de surveillance lors de la modification
+        try {
+            $this->concoursNotificationService->sendSurveillanceNotifications($concours);
+            Log::info('Notifications de surveillance envoyées pour la modification du concours', ['concours_id' => $concours->id]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi des notifications de surveillance lors de la modification', [
+                'concours_id' => $concours->id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         return response()->json($concours);
     }
@@ -277,5 +343,90 @@ class ConcoursController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Vérifier la disponibilité des salles pour une date et heure données
+     */
+    private function checkSalleAvailability($date, $heureDebut, $heureFin, $locaux, $excludeConcoursId = null)
+    {
+        $conflicts = [];
+
+        foreach ($locaux as $local) {
+            $local = trim($local);
+
+            // Vérifier les conflits avec les concours
+            $query = Concours::where('date_concours', $date)
+                ->where('locaux', 'LIKE', '%' . $local . '%')
+                ->where(function ($q) use ($heureDebut, $heureFin) {
+                    $q->where(function ($subQ) use ($heureDebut, $heureFin) {
+                        // Le début du nouveau concours est dans la plage d'un concours existant
+                        $subQ->where('heure_debut', '<=', $heureDebut)
+                            ->where('heure_fin', '>', $heureDebut);
+                    })->orWhere(function ($subQ) use ($heureDebut, $heureFin) {
+                        // La fin du nouveau concours est dans la plage d'un concours existant
+                        $subQ->where('heure_debut', '<', $heureFin)
+                            ->where('heure_fin', '>=', $heureFin);
+                    })->orWhere(function ($subQ) use ($heureDebut, $heureFin) {
+                        // Le nouveau concours englobe complètement un concours existant
+                        $subQ->where('heure_debut', '>=', $heureDebut)
+                            ->where('heure_fin', '<=', $heureFin);
+                    });
+                });
+
+            // Exclure le concours actuel lors de la modification
+            if ($excludeConcoursId) {
+                $query->where('id', '!=', $excludeConcoursId);
+            }
+
+            $conflictingConcours = $query->get();
+
+            if ($conflictingConcours->count() > 0) {
+                foreach ($conflictingConcours as $conflict) {
+                    $conflicts[] = [
+                        'local' => $local,
+                        'type' => 'concours',
+                        'conflict_with' => $conflict->titre,
+                        'date' => $conflict->date_concours,
+                        'heure_debut' => $conflict->heure_debut,
+                        'heure_fin' => $conflict->heure_fin
+                    ];
+                }
+            }
+
+            // Vérifier les conflits avec les examens (si vous avez une table exams)
+            // Vous pouvez ajouter ici la logique pour vérifier les conflits avec les examens
+            // en utilisant la même logique que pour les concours
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * API endpoint pour vérifier la disponibilité des salles
+     */
+    public function checkSalleAvailabilityAPI(Request $request)
+    {
+        $validated = $request->validate([
+            'date_concours' => 'required|date',
+            'heure_debut' => 'required',
+            'heure_fin' => 'required',
+            'locaux' => 'required|array',
+            'locaux.*' => 'string',
+            'exclude_concours_id' => 'nullable|integer'
+        ]);
+
+        $conflicts = $this->checkSalleAvailability(
+            $validated['date_concours'],
+            $validated['heure_debut'],
+            $validated['heure_fin'],
+            $validated['locaux'],
+            $validated['exclude_concours_id'] ?? null
+        );
+
+        return response()->json([
+            'available' => empty($conflicts),
+            'conflicts' => $conflicts
+        ]);
     }
 }

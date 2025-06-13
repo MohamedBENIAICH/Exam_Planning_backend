@@ -25,7 +25,7 @@
     <p>Merci de votre collaboration.</p>
 
     <p>Cordialement,<br>
-        Administration FST</p>
+        Administration FSTG</p>
 </body>
 
 </html>

@@ -56,7 +56,7 @@ class ClassroomController extends Controller
     public function index()
     {
         try {
-            $classrooms = Classroom::all();
+            $classrooms = Classroom::orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'status' => 'success',
@@ -291,11 +291,13 @@ class ClassroomController extends Controller
      */
     public function destroy($id)
     {
+        Log::info("Attempting to delete classroom with ID: " . $id);
         try {
             $classroom = Classroom::findOrFail($id);
             $classroom->delete();
             return response()->json(null, 204);
         } catch (\Exception $e) {
+            Log::error("Error deleting classroom with ID {$id}: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete classroom',

@@ -262,6 +262,9 @@ Route::prefix('concours')->group(function () {
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
     Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);
+
+    // Route pour vérifier la disponibilité des salles
+    Route::post('/check-salle-availability', [ConcoursController::class, 'checkSalleAvailability']);
 });
 
 Route::get('/test-public', function () {

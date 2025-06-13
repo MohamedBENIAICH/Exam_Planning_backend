@@ -193,7 +193,7 @@
     </div>
 
     <div class="signature">
-        <p>Fait à la Faculté des Sciences et Techniques, le {{ date('d/m/Y') }}</p>
+        <p>Fait à la Faculté des Sciences et Techniques de Marrakech, le {{ date('d/m/Y') }}</p>
         <div class="signature-line"></div>
         <p>Signature et cachet</p>
     </div>
