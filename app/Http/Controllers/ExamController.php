@@ -535,6 +535,34 @@ class ExamController extends Controller
     }
 
     /**
+     * Cancel an exam instead of deleting it
+     * This will send cancellation notifications to all concerned parties
+     */
+    public function cancel($id)
+    {
+        try {
+            $exam = Exam::with(['students', 'superviseurs', 'professeurs', 'module'])->findOrFail($id);
+
+            // Send cancellation notifications before deleting
+            app(\App\Services\ExamNotificationService::class)->sendCancellationNotifications($exam);
+
+            // Delete the exam completely from database
+            $exam->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Exam cancelled and deleted successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel exam',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/exams/latest",
      *     summary="Get the last 5 exams created",
@@ -809,6 +837,9 @@ class ExamController extends Controller
 
             // Send notifications to supervisors
             app(\App\Services\ExamNotificationService::class)->sendSupervisorNotifications($exam);
+
+            // Send update notifications to professors and supervisors
+            app(\App\Services\ExamNotificationService::class)->sendUpdateNotifications($exam);
 
             return response()->json([
                 'status' => 'success',
@@ -1404,5 +1435,29 @@ class ExamController extends Controller
             'status' => 'success',
             'count' => $count
         ]);
+    }
+
+    /**
+     * Send updated convocations to students after exam update
+     */
+    public function sendUpdatedConvocations($id)
+    {
+        try {
+            $exam = Exam::with(['students', 'module', 'classrooms'])->findOrFail($id);
+
+            // Send updated convocations
+            app(\App\Services\ExamNotificationService::class)->sendUpdatedConvocations($exam);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Updated convocations sent successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send updated convocations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -17,6 +17,7 @@ class Concours extends Model
         'heure_fin',
         'locaux',
         'type_epreuve',
+        'status'
     ];
 
     public function candidats()

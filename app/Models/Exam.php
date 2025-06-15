@@ -19,7 +19,8 @@ class Exam extends Model
         'heure_fin',
         'locaux',
         'superviseurs',
-        'professeurs'
+        'professeurs',
+        'status'
     ];
 
     protected $casts = [

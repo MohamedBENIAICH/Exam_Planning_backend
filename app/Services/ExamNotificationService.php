@@ -336,4 +336,347 @@ class ExamNotificationService
             Log::error('No valid supervisors found for exam', ['exam_id' => $exam->id, 'superviseurs' => $exam->superviseurs]);
         }
     }
+
+    /**
+     * Send cancellation notifications to all concerned parties (students, supervisors, professors)
+     *
+     * @param Exam $exam
+     * @return void
+     */
+    public function sendCancellationNotifications(Exam $exam)
+    {
+        // Ensure relationships are loaded
+        $exam->load(['students', 'module', 'classrooms']);
+
+        // Get module name safely
+        $moduleName = $exam->module ? $exam->module->module_intitule : 'Module inconnu';
+
+        Log::info('Début de l\'envoi des notifications d\'annulation', [
+            'exam_id' => $exam->id,
+            'students_count' => $exam->students->count(),
+            'superviseurs_raw' => $exam->superviseurs,
+            'professeurs_raw' => $exam->professeurs,
+            'module' => $moduleName
+        ]);
+
+        // Send cancellation notifications to students
+        foreach ($exam->students as $student) {
+            try {
+                if (empty($student->email)) {
+                    Log::error('Student has no email address', [
+                        'student_id' => $student->id,
+                        'name' => $student->prenom . ' ' . $student->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($student->email)->send(new \App\Mail\ExamCancellationNotification(
+                    $exam,
+                    $student->prenom . ' ' . $student->nom
+                ));
+
+                Log::info('Cancellation notification sent successfully to student', [
+                    'student_id' => $student->id,
+                    'email' => $student->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send cancellation notification to student', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Send cancellation notifications to supervisors (stored as string)
+        if (!empty($exam->superviseurs)) {
+            Log::info('Processing supervisors for cancellation', [
+                'superviseurs_raw' => $exam->superviseurs
+            ]);
+
+            $supervisorNames = array_map('trim', explode(',', $exam->superviseurs));
+
+            Log::info('Supervisor names extracted', [
+                'supervisor_names' => $supervisorNames
+            ]);
+
+            foreach ($supervisorNames as $supervisorName) {
+                if (empty($supervisorName)) continue;
+
+                Log::info('Processing supervisor name', [
+                    'supervisor_name' => $supervisorName
+                ]);
+
+                // Find supervisor by name
+                $nameParts = explode(' ', trim($supervisorName));
+                $lastName = end($nameParts);
+                $firstName = implode(' ', array_slice($nameParts, 0, -1));
+
+                Log::info('Name parts extracted', [
+                    'first_name' => $firstName,
+                    'last_name' => $lastName
+                ]);
+
+                $supervisor = \App\Models\Superviseur::where('nom', $lastName)
+                    ->where('prenom', $firstName)
+                    ->first();
+
+                Log::info('Supervisor lookup result', [
+                    'supervisor_found' => $supervisor ? 'yes' : 'no',
+                    'supervisor_id' => $supervisor ? $supervisor->id : null,
+                    'supervisor_email' => $supervisor ? $supervisor->email : null
+                ]);
+
+                if ($supervisor && !empty($supervisor->email)) {
+                    try {
+                        Mail::to($supervisor->email)->send(new \App\Mail\ExamCancellationNotification(
+                            $exam,
+                            $supervisor->prenom . ' ' . $supervisor->nom,
+                            'supervisor'
+                        ));
+
+                        Log::info('Cancellation notification sent successfully to supervisor', [
+                            'supervisor_id' => $supervisor->id,
+                            'email' => $supervisor->email,
+                            'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send cancellation notification to supervisor', [
+                            'supervisor_id' => $supervisor->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    Log::error('Supervisor not found or has no email', [
+                        'supervisor_name' => $supervisorName,
+                        'found_supervisor' => $supervisor ? $supervisor->id : 'not found',
+                        'has_email' => $supervisor ? !empty($supervisor->email) : false
+                    ]);
+                }
+            }
+        } else {
+            Log::info('No supervisors found for exam', [
+                'exam_id' => $exam->id,
+                'superviseurs_field' => $exam->superviseurs
+            ]);
+        }
+
+        // Send cancellation notifications to professors (stored as string)
+        if (!empty($exam->professeurs)) {
+            $professeurNames = array_map('trim', explode(',', $exam->professeurs));
+
+            foreach ($professeurNames as $professeurName) {
+                if (empty($professeurName)) continue;
+
+                // Find professeur by name
+                $nameParts = explode(' ', trim($professeurName));
+                $lastName = end($nameParts);
+                $firstName = implode(' ', array_slice($nameParts, 0, -1));
+
+                $professeur = \App\Models\Professeur::where('nom', $lastName)
+                    ->where('prenom', $firstName)
+                    ->first();
+
+                if ($professeur && !empty($professeur->email)) {
+                    try {
+                        Mail::to($professeur->email)->send(new \App\Mail\ExamCancellationNotification(
+                            $exam,
+                            $professeur->prenom . ' ' . $professeur->nom,
+                            'professeur'
+                        ));
+
+                        Log::info('Cancellation notification sent successfully to professeur', [
+                            'professeur_id' => $professeur->id,
+                            'email' => $professeur->email,
+                            'name' => $professeur->prenom . ' ' . $professeur->nom
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send cancellation notification to professeur', [
+                            'professeur_id' => $professeur->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    Log::error('Professeur not found or has no email', [
+                        'professeur_name' => $professeurName,
+                        'found_professeur' => $professeur ? $professeur->id : 'not found',
+                        'has_email' => $professeur ? !empty($professeur->email) : false
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Send update notifications to professors and supervisors
+     *
+     * @param Exam $exam
+     * @return void
+     */
+    public function sendUpdateNotifications(Exam $exam)
+    {
+        // Ensure relationships are loaded
+        $exam->load(['module', 'classrooms']);
+
+        // Get module name safely
+        $moduleName = $exam->module ? $exam->module->module_intitule : 'Module inconnu';
+
+        Log::info('Début de l\'envoi des notifications de mise à jour', [
+            'exam_id' => $exam->id,
+            'superviseurs_raw' => $exam->superviseurs,
+            'professeurs_raw' => $exam->professeurs,
+            'module' => $moduleName
+        ]);
+
+        // Send update notifications to supervisors (stored as string)
+        if (!empty($exam->superviseurs)) {
+            $supervisorNames = array_map('trim', explode(',', $exam->superviseurs));
+
+            foreach ($supervisorNames as $supervisorName) {
+                if (empty($supervisorName)) continue;
+
+                // Find supervisor by name
+                $nameParts = explode(' ', trim($supervisorName));
+                $lastName = end($nameParts);
+                $firstName = implode(' ', array_slice($nameParts, 0, -1));
+
+                $supervisor = \App\Models\Superviseur::where('nom', $lastName)
+                    ->where('prenom', $firstName)
+                    ->first();
+
+                if ($supervisor && !empty($supervisor->email)) {
+                    try {
+                        Mail::to($supervisor->email)->send(new \App\Mail\ExamUpdateNotification(
+                            $exam,
+                            $supervisor->prenom . ' ' . $supervisor->nom,
+                            'supervisor'
+                        ));
+
+                        Log::info('Update notification sent successfully to supervisor', [
+                            'supervisor_id' => $supervisor->id,
+                            'email' => $supervisor->email,
+                            'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send update notification to supervisor', [
+                            'supervisor_id' => $supervisor->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    Log::error('Supervisor not found or has no email', [
+                        'supervisor_name' => $supervisorName,
+                        'found_supervisor' => $supervisor ? $supervisor->id : 'not found',
+                        'has_email' => $supervisor ? !empty($supervisor->email) : false
+                    ]);
+                }
+            }
+        }
+
+        // Send update notifications to professors (stored as string)
+        if (!empty($exam->professeurs)) {
+            $professeurNames = array_map('trim', explode(',', $exam->professeurs));
+
+            foreach ($professeurNames as $professeurName) {
+                if (empty($professeurName)) continue;
+
+                // Find professeur by name
+                $nameParts = explode(' ', trim($professeurName));
+                $lastName = end($nameParts);
+                $firstName = implode(' ', array_slice($nameParts, 0, -1));
+
+                $professeur = \App\Models\Professeur::where('nom', $lastName)
+                    ->where('prenom', $firstName)
+                    ->first();
+
+                if ($professeur && !empty($professeur->email)) {
+                    try {
+                        Mail::to($professeur->email)->send(new \App\Mail\ExamUpdateNotification(
+                            $exam,
+                            $professeur->prenom . ' ' . $professeur->nom,
+                            'professeur'
+                        ));
+
+                        Log::info('Update notification sent successfully to professeur', [
+                            'professeur_id' => $professeur->id,
+                            'email' => $professeur->email,
+                            'name' => $professeur->prenom . ' ' . $professeur->nom
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send update notification to professeur', [
+                            'professeur_id' => $professeur->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    Log::error('Professeur not found or has no email', [
+                        'professeur_name' => $professeurName,
+                        'found_professeur' => $professeur ? $professeur->id : 'not found',
+                        'has_email' => $professeur ? !empty($professeur->email) : false
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Send updated convocations to students after exam update
+     *
+     * @param Exam $exam
+     * @return void
+     */
+    public function sendUpdatedConvocations(Exam $exam)
+    {
+        // Ensure relationships are loaded
+        $exam->load(['students', 'module', 'classrooms']);
+
+        // Get module name safely
+        $moduleName = $exam->module ? $exam->module->module_intitule : 'Module inconnu';
+
+        Log::info('Début de l\'envoi des convocations mises à jour', [
+            'exam_id' => $exam->id,
+            'students_count' => $exam->students->count(),
+            'module' => $moduleName
+        ]);
+
+        // Send updated convocations to students
+        foreach ($exam->students as $student) {
+            try {
+                if (empty($student->email)) {
+                    Log::error('Student has no email address', [
+                        'student_id' => $student->id,
+                        'name' => $student->prenom . ' ' . $student->nom
+                    ]);
+                    continue;
+                }
+
+                // Generate updated PDF convocation
+                $pdf = $this->generateConvocationPDF($student, $exam);
+
+                // Prepare email data
+                $emailData = [
+                    'pdf_data' => $pdf,
+                    'exam' => [
+                        'name' => $moduleName,
+                        'date' => $exam->date_examen ? $exam->date_examen->format('d/m/Y') : 'Date non spécifiée',
+                        'heure_debut' => $exam->heure_debut ? $exam->heure_debut->format('H:i') : 'Heure non spécifiée',
+                        'heure_fin' => $exam->heure_fin ? $exam->heure_fin->format('H:i') : 'Heure non spécifiée',
+                        'salle' => $exam->classrooms->pluck('nom_du_local')->implode(', ') ?: 'Salle non spécifiée'
+                    ]
+                ];
+
+                // Send updated convocation
+                Mail::to($student->email)->send(new \App\Mail\ExamConvocation($student, $emailData));
+
+                Log::info('Updated convocation sent successfully to student', [
+                    'student_id' => $student->id,
+                    'email' => $student->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send updated convocation to student', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
 }

@@ -203,6 +203,17 @@ class ConcoursController extends Controller
             ]);
         }
 
+        // Send update notifications to professors and supervisors
+        try {
+            $this->concoursNotificationService->sendUpdateNotifications($concours);
+            Log::info('Notifications de mise à jour envoyées pour la modification du concours', ['concours_id' => $concours->id]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi des notifications de mise à jour lors de la modification', [
+                'concours_id' => $concours->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
         return response()->json($concours);
     }
 
@@ -214,6 +225,64 @@ class ConcoursController extends Controller
         }
         $concours->delete();
         return response()->json(['message' => 'Concours deleted successfully']);
+    }
+
+    /**
+     * Cancel a concours instead of deleting it
+     * This will send cancellation notifications to all concerned parties
+     */
+    public function cancel($id)
+    {
+        try {
+            $concours = Concours::with(['candidats', 'superviseurs', 'professeurs'])->find($id);
+            if (!$concours) {
+                return response()->json(['message' => 'Concours not found'], 404);
+            }
+
+            // Send cancellation notifications before deleting
+            app(\App\Services\ConcoursNotificationService::class)->sendCancellationNotifications($concours);
+
+            // Delete the concours completely from database
+            $concours->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Concours cancelled and deleted successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel concours',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send updated convocations to candidates after concours update
+     */
+    public function sendUpdatedConvocations($id)
+    {
+        try {
+            $concours = Concours::with(['candidats'])->find($id);
+            if (!$concours) {
+                return response()->json(['message' => 'Concours not found'], 404);
+            }
+
+            // Send updated convocations
+            app(\App\Services\ConcoursNotificationService::class)->sendUpdatedConvocations($concours);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Updated convocations sent successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send updated convocations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

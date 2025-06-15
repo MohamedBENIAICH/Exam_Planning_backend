@@ -56,6 +56,12 @@ Route::prefix('exams')->group(function () {
     Route::put('/{id}', [ExamController::class, 'update']);
     Route::delete('/{id}', [ExamController::class, 'destroy']);
 
+    // New cancel route
+    Route::post('/{id}/cancel', [ExamController::class, 'cancel']);
+
+    // Send updated convocations route
+    Route::post('/{id}/send-updated-convocations', [ExamController::class, 'sendUpdatedConvocations']);
+
     // Exam-Classroom Assignment
     Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);
     Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);
@@ -253,18 +259,25 @@ Route::prefix('candidats')->group(function () {
 Route::prefix('concours')->group(function () {
     Route::get('/', [ConcoursController::class, 'index']);
     Route::post('/', [ConcoursController::class, 'store']);
+
+    // Specific routes first to avoid conflicts with {id} routes
     Route::get('/latest', [ConcoursController::class, 'latest']);
+    Route::post('/check-salle-availability', [ConcoursController::class, 'checkSalleAvailabilityAPI']);
+
+    // Routes with parameters
     Route::get('/{id}', [ConcoursController::class, 'show']);
     Route::put('/{id}', [ConcoursController::class, 'update']);
     Route::delete('/{id}', [ConcoursController::class, 'destroy']);
 
-    // Routes pour les convocations
+    // New cancel route
+    Route::post('/{id}/cancel', [ConcoursController::class, 'cancel']);
+
+    // Send updated convocations route
+    Route::post('/{id}/send-updated-convocations', [ConcoursController::class, 'sendUpdatedConvocations']);
+
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
     Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);
-
-    // Route pour vérifier la disponibilité des salles
-    Route::post('/check-salle-availability', [ConcoursController::class, 'checkSalleAvailability']);
 });
 
 Route::get('/test-public', function () {

@@ -149,6 +149,90 @@ Le backend expose une API REST sur `http://localhost:8000`. Les points d'API son
 -   `/api/concours` : Gestion des concours (CRUD)
 -   `/api/auth` : Authentification des utilisateurs
 
+## Nouvelles Fonctionnalités - Annulation et Notifications Automatiques
+
+### Fonctionnalité d'Annulation
+
+Le système a été amélioré pour remplacer la suppression définitive par une annulation intelligente :
+
+-   **Annulation d'Examens** : `POST /api/exams/{id}/cancel`
+-   **Annulation de Concours** : `POST /api/concours/{id}/cancel`
+
+Lorsqu'un examen ou concours est annulé :
+
+-   Le statut passe à `cancelled` au lieu d'être supprimé
+-   Des notifications automatiques sont envoyées à tous les acteurs concernés
+-   L'historique est conservé pour la traçabilité
+
+### Notifications Automatiques
+
+#### Notifications d'Annulation
+
+-   **Étudiants/Candidats** : Informés de l'annulation avec détails
+-   **Superviseurs** : Notifiés de l'annulation de leur mission
+-   **Professeurs** : Informés de l'annulation de l'examen/concours
+
+#### Notifications de Mise à Jour
+
+-   **Professeurs et Superviseurs** : Informés des modifications apportées
+-   **Nouvelles Convocations** : Envoi automatique de convocations mises à jour
+
+### Nouvelles Routes API
+
+```
+POST /api/exams/{id}/send-updated-convocations
+POST /api/concours/{id}/send-updated-convocations
+```
+
+### Statut des Événements
+
+Les examens et concours ont maintenant un champ `status` avec les valeurs :
+
+-   `active` : Événement actif (par défaut)
+-   `cancelled` : Événement annulé
+-   `completed` : Événement terminé
+
+### Services de Notification
+
+-   `ExamNotificationService` : Gestion des notifications pour les examens
+-   `ConcoursNotificationService` : Gestion des notifications pour les concours
+
+### Classes Mail
+
+Nouvelles classes pour les notifications automatiques :
+
+-   `ExamCancellationNotification`
+-   `ConcoursCancellationNotification`
+-   `ExamUpdateNotification`
+-   `ConcoursUpdateNotification`
+
+### Vues d'Email
+
+Nouvelles vues d'email organisées par type et destinataire :
+
+```
+resources/views/emails/
+├── exam/
+│   ├── cancellation-student.blade.php
+│   ├── cancellation-supervisor.blade.php
+│   ├── cancellation-professeur.blade.php
+│   ├── update-supervisor.blade.php
+│   └── update-professeur.blade.php
+└── concours/
+    ├── cancellation-candidat.blade.php
+    ├── cancellation-supervisor.blade.php
+    ├── cancellation-professeur.blade.php
+    ├── update-supervisor.blade.php
+    └── update-professeur.blade.php
+```
+
+### Migrations
+
+Nouvelles migrations appliquées :
+
+-   `2025_06_15_134942_add_status_to_exams_table.php`
+-   `2025_06_15_135002_add_status_to_concours_table.php`
+
 ## Dépannage
 
 -   **Le Backend ne démarre pas ?**
@@ -160,8 +244,8 @@ Le backend expose une API REST sur `http://localhost:8000`. Les points d'API son
     -   Exécutez `composer install` à nouveau pour vous assurer que toutes les dépendances sont correctement installées.
 
 ## Contributeurs et Contribution
-*   [MohamedBENIAICH](https://github.com/MohamedBENIAICH)
-*   [DiarraIbra](https://github.com/DiarraIbra)
+
+-   [MohamedBENIAICH](https://github.com/MohamedBENIAICH)
+-   [DiarraIbra](https://github.com/DiarraIbra)
 
 N'hésitez pas à contribuer à ce projet en ouvrant des issues ou des pull requests. Veuillez suivre les conventions de codage Laravel
-

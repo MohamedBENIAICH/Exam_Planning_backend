@@ -236,12 +236,12 @@ class ConcoursNotificationService
      */
     public function sendSurveillanceNotifications(Concours $concours)
     {
-        // Ensure relationships are loaded
+        // Load all necessary relationships
         $concours->load(['superviseurs', 'professeurs']);
 
         Log::info('Début de l\'envoi des notifications de surveillance pour le concours', [
             'concours_id' => $concours->id,
-            'supervisors_count' => $concours->superviseurs->count(),
+            'superviseurs_count' => $concours->superviseurs->count(),
             'professeurs_count' => $concours->professeurs->count(),
             'titre' => $concours->titre
         ]);
@@ -258,17 +258,23 @@ class ConcoursNotificationService
                         continue;
                     }
 
+                    Log::info('Sending surveillance notification to supervisor', [
+                        'supervisor_id' => $supervisor->id,
+                        'email' => $supervisor->email,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+
                     Mail::to($supervisor->email)->send(new ConcoursSurveillanceNotification(
                         $concours,
                         $supervisor->prenom . ' ' . $supervisor->nom
                     ));
 
-                    Log::info('Notification sent successfully to supervisor', [
+                    Log::info('Surveillance notification sent successfully to supervisor', [
                         'supervisor_id' => $supervisor->id,
                         'email' => $supervisor->email
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to send notification to supervisor', [
+                    Log::error('Failed to send surveillance notification to supervisor', [
                         'supervisor_id' => $supervisor->id,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
@@ -289,23 +295,272 @@ class ConcoursNotificationService
                         continue;
                     }
 
+                    Log::info('Sending surveillance notification to professeur', [
+                        'professeur_id' => $professeur->id,
+                        'email' => $professeur->email,
+                        'name' => $professeur->prenom . ' ' . $professeur->nom
+                    ]);
+
                     Mail::to($professeur->email)->send(new ConcoursSurveillanceNotification(
                         $concours,
                         $professeur->prenom . ' ' . $professeur->nom,
                         'professeur'
                     ));
 
-                    Log::info('Notification sent successfully to professeur', [
+                    Log::info('Surveillance notification sent successfully to professeur', [
                         'professeur_id' => $professeur->id,
                         'email' => $professeur->email
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to send notification to professeur', [
+                    Log::error('Failed to send surveillance notification to professeur', [
                         'professeur_id' => $professeur->id,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
                 }
+            }
+        }
+    }
+
+    /**
+     * Send cancellation notifications to all concerned parties (candidates, supervisors, professors)
+     *
+     * @param Concours $concours
+     * @return void
+     */
+    public function sendCancellationNotifications(Concours $concours)
+    {
+        // Load all necessary relationships
+        $concours->load(['candidats', 'superviseurs', 'professeurs']);
+
+        Log::info('Début de l\'envoi des notifications d\'annulation pour le concours', [
+            'concours_id' => $concours->id,
+            'candidats_count' => $concours->candidats->count(),
+            'superviseurs_count' => $concours->superviseurs->count(),
+            'professeurs_count' => $concours->professeurs->count(),
+            'titre' => $concours->titre
+        ]);
+
+        // Send cancellation notifications to candidates
+        foreach ($concours->candidats as $candidat) {
+            try {
+                if (empty($candidat->email)) {
+                    Log::error('Candidat has no email address', [
+                        'candidat_id' => $candidat->id,
+                        'name' => $candidat->prenom . ' ' . $candidat->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($candidat->email)->send(new \App\Mail\ConcoursCancellationNotification(
+                    $concours,
+                    $candidat->prenom . ' ' . $candidat->nom
+                ));
+
+                Log::info('Cancellation notification sent successfully to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'email' => $candidat->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send cancellation notification to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Send cancellation notifications to supervisors
+        foreach ($concours->superviseurs as $supervisor) {
+            try {
+                if (empty($supervisor->email)) {
+                    Log::error('Supervisor has no email address', [
+                        'supervisor_id' => $supervisor->id,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($supervisor->email)->send(new \App\Mail\ConcoursCancellationNotification(
+                    $concours,
+                    $supervisor->prenom . ' ' . $supervisor->nom,
+                    'supervisor'
+                ));
+
+                Log::info('Cancellation notification sent successfully to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $supervisor->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send cancellation notification to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Send cancellation notifications to professors
+        foreach ($concours->professeurs as $professeur) {
+            try {
+                if (empty($professeur->email)) {
+                    Log::error('Professeur has no email address', [
+                        'professeur_id' => $professeur->id,
+                        'name' => $professeur->prenom . ' ' . $professeur->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($professeur->email)->send(new \App\Mail\ConcoursCancellationNotification(
+                    $concours,
+                    $professeur->prenom . ' ' . $professeur->nom,
+                    'professeur'
+                ));
+
+                Log::info('Cancellation notification sent successfully to professeur', [
+                    'professeur_id' => $professeur->id,
+                    'email' => $professeur->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send cancellation notification to professeur', [
+                    'professeur_id' => $professeur->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Send update notifications to professors and supervisors
+     *
+     * @param Concours $concours
+     * @return void
+     */
+    public function sendUpdateNotifications(Concours $concours)
+    {
+        // Load all necessary relationships
+        $concours->load(['superviseurs', 'professeurs']);
+
+        Log::info('Début de l\'envoi des notifications de mise à jour pour le concours', [
+            'concours_id' => $concours->id,
+            'superviseurs_count' => $concours->superviseurs->count(),
+            'professeurs_count' => $concours->professeurs->count(),
+            'titre' => $concours->titre
+        ]);
+
+        // Send update notifications to supervisors
+        foreach ($concours->superviseurs as $supervisor) {
+            try {
+                if (empty($supervisor->email)) {
+                    Log::error('Supervisor has no email address', [
+                        'supervisor_id' => $supervisor->id,
+                        'name' => $supervisor->prenom . ' ' . $supervisor->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($supervisor->email)->send(new \App\Mail\ConcoursUpdateNotification(
+                    $concours,
+                    $supervisor->prenom . ' ' . $supervisor->nom,
+                    'supervisor'
+                ));
+
+                Log::info('Update notification sent successfully to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $supervisor->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send update notification to supervisor', [
+                    'supervisor_id' => $supervisor->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Send update notifications to professors
+        foreach ($concours->professeurs as $professeur) {
+            try {
+                if (empty($professeur->email)) {
+                    Log::error('Professeur has no email address', [
+                        'professeur_id' => $professeur->id,
+                        'name' => $professeur->prenom . ' ' . $professeur->nom
+                    ]);
+                    continue;
+                }
+
+                Mail::to($professeur->email)->send(new \App\Mail\ConcoursUpdateNotification(
+                    $concours,
+                    $professeur->prenom . ' ' . $professeur->nom,
+                    'professeur'
+                ));
+
+                Log::info('Update notification sent successfully to professeur', [
+                    'professeur_id' => $professeur->id,
+                    'email' => $professeur->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send update notification to professeur', [
+                    'professeur_id' => $professeur->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Send updated convocations to candidates after concours update
+     *
+     * @param Concours $concours
+     * @return void
+     */
+    public function sendUpdatedConvocations(Concours $concours)
+    {
+        // Load all necessary relationships
+        $concours->load(['candidats']);
+
+        Log::info('Début de l\'envoi des convocations mises à jour pour le concours', [
+            'concours_id' => $concours->id,
+            'candidats_count' => $concours->candidats->count(),
+            'titre' => $concours->titre
+        ]);
+
+        // Send updated convocations to candidates
+        foreach ($concours->candidats as $candidat) {
+            try {
+                if (empty($candidat->email)) {
+                    Log::error('Candidat has no email address', [
+                        'candidat_id' => $candidat->id,
+                        'name' => $candidat->prenom . ' ' . $candidat->nom
+                    ]);
+                    continue;
+                }
+
+                // Generate updated PDF convocation
+                $pdf = $this->generateConvocationPDF($candidat, $concours);
+
+                // Prepare email data
+                $emailData = [
+                    'pdf_data' => $pdf,
+                    'concours' => [
+                        'titre' => $concours->titre,
+                        'date' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('d/m/Y') : 'Date non spécifiée',
+                        'heure_debut' => $concours->heure_debut ? \Carbon\Carbon::parse($concours->heure_debut)->format('H:i') : 'Heure non spécifiée',
+                        'heure_fin' => $concours->heure_fin ? \Carbon\Carbon::parse($concours->heure_fin)->format('H:i') : 'Heure non spécifiée',
+                        'locaux' => $concours->locaux ?: 'Local non spécifié',
+                        'type_epreuve' => $concours->type_epreuve
+                    ]
+                ];
+
+                // Send updated convocation
+                Mail::to($candidat->email)->send(new \App\Mail\ConcoursConvocation($candidat, $emailData));
+
+                Log::info('Updated convocation sent successfully to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'email' => $candidat->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send updated convocation to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
     }
