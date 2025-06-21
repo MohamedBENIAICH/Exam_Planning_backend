@@ -287,14 +287,7 @@ Nouvelles migrations appliquées :
 -   **Problèmes de dépendances ?**
     -   Exécutez `composer install` à nouveau pour vous assurer que toutes les dépendances sont correctement installées.
 
-## Contributeurs et Contribution
 
--   [MohamedBENIAICH](https://github.com/MohamedBENIAICH)
--   [DiarraIbra](https://github.com/DiarraIbra)
-
-N'hésitez pas à contribuer à ce projet en ouvrant des issues ou des pull requests. Veuillez suivre les conventions de codage Laravel
-
----
 
 # Annexe : Implémentation des QR Codes pour les Concours
 
@@ -437,7 +430,7 @@ La fonctionnalité est automatiquement activée lors de :
 
 Des tests ont été effectués avec succès :
 
--   **Test de génération de QR code :** Candidat de test : ABAHRI Hatim (CNE: 2320382, CIN: 570161) - PDF généré avec succès (34,521 bytes) incluant le QR code
+-   **Test de génération de QR code :** Candidat de test : Nom Prenom (CNE: 2356278, CIN: 97392Y6) - PDF généré avec succès (34,521 bytes) incluant le QR code
 -   **Test d'envoi automatique lors de la modification :** Envoi de convocations mises à jour avec QR codes réussi
 -   **Test de la vue de mise à jour :** Vue spécifique testée avec succès (38,186 bytes) avec design distinctif
 
@@ -453,3 +446,10 @@ Cette implémentation est compatible avec la logique existante et n'affecte pas 
 4. **Fiabilité :** Gestion d'erreur robuste pour éviter les interruptions du processus de modification
 5. **Distinction claire :** Les candidats peuvent facilement identifier les convocations mises à jour grâce au design distinctif
 6. **Messages adaptés :** Les consignes et messages sont spécifiquement adaptés au contexte de mise à jour
+
+## Contributeurs et Contribution
+
+-   [MohamedBENIAICH](https://github.com/MohamedBENIAICH)
+-   [DiarraIbra](https://github.com/DiarraIbra)
+
+N'hésitez pas à contribuer à ce projet en ouvrant des issues ou des pull requests. Veuillez suivre les conventions de codage Laravel
