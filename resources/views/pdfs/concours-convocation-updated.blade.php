@@ -153,7 +153,7 @@
     </div>
 
     <div class="update-notice">
-        <h3>⚠️ CONVOCATION MISE À JOUR</h3>
+        <h3>CONVOCATION MISE À JOUR</h3>
         <p><strong>Cette convocation remplace la précédente.</strong> Veuillez prendre note des modifications apportées
             au concours.</p>
     </div>
@@ -231,7 +231,7 @@
         </div>
 
         <div class="important">
-            <h4>⚠️ IMPORTANT - MODIFICATIONS APPORTÉES :</h4>
+            <h4>IMPORTANT - MODIFICATIONS APPORTÉES :</h4>
             <ul>
                 <li>Cette convocation <strong>remplace complètement</strong> la précédente</li>
                 <li>Présentez-vous <strong>30 minutes avant l'heure de début</strong></li>

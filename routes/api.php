@@ -18,6 +18,7 @@ use App\Http\Controllers\CandidatController;
 use App\Http\Controllers\ConcoursController;
 use App\Http\Controllers\ConcoursClassroomAssignmentController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\AttendanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -308,3 +309,7 @@ Route::prefix('setup')->group(function () {
     Route::post('/create-tables', [SetupController::class, 'createMissingTables']);
     Route::get('/check-tables', [SetupController::class, 'checkTables']);
 });
+
+// Attendance API
+Route::post('/attendances', [AttendanceController::class, 'store']);
+Route::get('/attendances', [AttendanceController::class, 'index']);

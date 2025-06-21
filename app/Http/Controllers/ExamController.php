@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Attendance;
 
 /**
  * @OA\Tag(
@@ -1308,11 +1309,13 @@ class ExamController extends Controller
             if ($exam->students && is_object($exam->students) && method_exists($exam->students, 'count')) {
                 $students = $exam->students;
             } else {
-                // Si ce n'est pas une collection, essayer de récupérer les étudiants manuellement
                 $students = Student::whereHas('exams', function ($query) use ($exam) {
                     $query->where('exam_id', $exam->id);
                 })->get();
             }
+
+            // Récupérer les présences pour cet examen
+            $attendances = Attendance::where('exam_id', $exam->id)->get();
 
             // S'assurer que superviseurs est une collection
             $superviseurs = collect();
@@ -1386,6 +1389,7 @@ class ExamController extends Controller
                 'date_examen' => \Carbon\Carbon::parse($exam->date_examen)->format('d/m/Y'),
                 'heure_debut' => \Carbon\Carbon::parse($exam->heure_debut)->format('H:i'),
                 'heure_fin' => \Carbon\Carbon::parse($exam->heure_fin)->format('H:i'),
+                'attendances' => $attendances,
             ];
 
             // Debug: Vérifier les données finales

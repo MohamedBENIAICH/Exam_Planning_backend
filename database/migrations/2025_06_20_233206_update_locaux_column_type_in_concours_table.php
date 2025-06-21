@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::table('concours', function (Blueprint $table) {
             $table->json('locaux_json')->after('locaux')->nullable();
         });
-        
+
         // Copy and convert existing data to the new column
         $concoursList = DB::table('concours')->get();
         foreach ($concoursList as $concours) {
@@ -42,7 +42,7 @@ return new class extends Migration
                 }
             }
         }
-        
+
         // Rename columns to swap them using raw SQL for MariaDB compatibility
         DB::statement('ALTER TABLE concours CHANGE locaux locaux_old TEXT');
         DB::statement('ALTER TABLE concours CHANGE locaux_json locaux JSON');

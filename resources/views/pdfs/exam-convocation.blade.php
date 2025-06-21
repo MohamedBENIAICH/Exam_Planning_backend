@@ -95,6 +95,20 @@
             margin-top: 15px;
         }
 
+        .students-table th,
+        .students-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 12px;
+        }
+
+        .students-table th.status-col,
+        .students-table td.status-col {
+            min-width: 70px;
+            max-width: 100px;
+            text-align: center;
+        }
+
         .students-table th {
             background-color: #3498db;
             color: white;
@@ -271,6 +285,7 @@
                         <th>Prénom</th>
                         <th>Email</th>
                         <th>Niveau</th>
+                        <th class="status-col">Statut</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -282,6 +297,12 @@
                             <td>{{ $student->prenom }}</td>
                             <td>{{ $student->email }}</td>
                             <td>{{ $student->niveau }}</td>
+                            <td class="status-col">
+                                @php
+                                    $attendance = $attendances->firstWhere('student_id', $student->id);
+                                @endphp
+                                {{ $attendance ? ($attendance->status === 'present' ? 'Présent' : 'Absent') : 'Absent' }}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
