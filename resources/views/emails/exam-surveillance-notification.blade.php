@@ -6,7 +6,7 @@
 </head>
 
 <body>
-    <p>Bonjour {{ $surveillantName }},</p>
+    <p>Bonjour monsieur {{ $surveillantName }},</p>
 
     <p>Vous avez été sélectionné(e) pour surveiller l'examen suivant :</p>
 

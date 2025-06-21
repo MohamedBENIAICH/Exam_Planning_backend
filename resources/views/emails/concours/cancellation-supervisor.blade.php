@@ -54,7 +54,7 @@
     </div>
 
     <div class="content">
-        <p>Bonjour {{ $recipientName }},</p>
+        <p>Bonjour monsieur {{ $recipientName }},</p>
 
         <p>Nous vous informons que votre mission de surveillance pour le concours suivant a été <strong>annulée</strong>
             :</p>

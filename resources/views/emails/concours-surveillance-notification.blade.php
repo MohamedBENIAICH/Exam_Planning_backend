@@ -60,7 +60,7 @@
     </div>
 
     <div class="content">
-        <p>Bonjour <strong>{{ $personName }}</strong>,</p>
+        <p>Bonjour monsieur <strong>{{ $personName }}</strong>,</p>
 
         <p>Nous vous informons que vous avez été désigné(e) comme <strong>{{ $role }}</strong> pour le concours
             suivant :</p>

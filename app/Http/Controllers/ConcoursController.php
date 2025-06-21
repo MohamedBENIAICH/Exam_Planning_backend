@@ -318,6 +318,33 @@ class ConcoursController extends Controller
 
         $concours->classroom_assignments = $assignments;
 
+        // Ajout : répartition détaillée par salle
+        $repartition = [];
+        $grouped = $assignments->groupBy('classroom_id');
+        foreach ($grouped as $classroomId => $classroomAssignments) {
+            $classroom = $classroomAssignments->first()->classroom;
+            $repartition[] = [
+                'classroom_id' => $classroom->id,
+                'classroom_name' => $classroom->nom_du_local,
+                'departement' => $classroom->departement,
+                'capacity' => $classroom->capacite,
+                'assigned' => $classroomAssignments->count(),
+                'available' => $classroom->capacite - $classroomAssignments->count(),
+                'candidats' => $classroomAssignments->map(function ($assignment) {
+                    return [
+                        'candidat_id' => $assignment->candidat->id,
+                        'cne' => $assignment->candidat->CNE,
+                        'cin' => $assignment->candidat->CIN,
+                        'nom' => $assignment->candidat->nom,
+                        'prenom' => $assignment->candidat->prenom,
+                        'email' => $assignment->candidat->email,
+                        'seat_number' => $assignment->seat_number
+                    ];
+                })->sortBy('seat_number')->values()
+            ];
+        }
+        $concours->repartition = $repartition;
+
         return response()->json($concours);
     }
 
@@ -347,6 +374,16 @@ class ConcoursController extends Controller
             'professeurs' => 'nullable|array',
             'professeurs.*' => 'integer|exists:professeurs,id',
         ]);
+
+        // Vérifier qu'au moins un local est fourni
+        $locauxFromRequest = isset($validated['locaux']) ? $validated['locaux'] : null;
+        $locauxFromConcours = $concours->locaux;
+        if ((empty($locauxFromRequest) || $locauxFromRequest === '[]') && (empty($locauxFromConcours) || $locauxFromConcours === '[]')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Veuillez sélectionner au moins un local pour le concours.'
+            ], 422);
+        }
 
         // Vérifier la disponibilité des salles (en excluant le concours actuel)
         if (isset($validated['locaux']) && $validated['locaux']) {
@@ -404,11 +441,17 @@ class ConcoursController extends Controller
                 foreach ($chunks as $i => $chunk) {
                     $local = $locauxToUse[$i];
                     foreach ($chunk as $candidatId) {
-                        \App\Models\ConcoursClassroomAssignment::create([
-                            'concours_id' => $concours->id,
-                            'candidat_id' => $candidatId,
-                            'classroom_id' => \App\Models\Classroom::where('nom_du_local', $local)->first()->id,
-                        ]);
+                        $classroom = \App\Models\Classroom::where('nom_du_local', $local)->first();
+                        if ($classroom) {
+                            \App\Models\ConcoursClassroomAssignment::create([
+                                'concours_id' => $concours->id,
+                                'candidat_id' => $candidatId,
+                                'classroom_id' => $classroom->id,
+                            ]);
+                        } else {
+                            \Illuminate\Support\Facades\Log::error("Classroom not found for local: $local");
+                            // Optionnel : tu peux aussi retourner une erreur ou ignorer selon le besoin
+                        }
                     }
                 }
                 \Illuminate\Support\Facades\Log::info('Candidats distributed to locaux (store)', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds]);
@@ -431,11 +474,17 @@ class ConcoursController extends Controller
                 foreach ($chunks as $i => $chunk) {
                     $local = $locauxToUse[$i];
                     foreach ($chunk as $candidatId) {
-                        \App\Models\ConcoursClassroomAssignment::create([
-                            'concours_id' => $concours->id,
-                            'candidat_id' => $candidatId,
-                            'classroom_id' => \App\Models\Classroom::where('nom_du_local', $local)->first()->id,
-                        ]);
+                        $classroom = \App\Models\Classroom::where('nom_du_local', $local)->first();
+                        if ($classroom) {
+                            \App\Models\ConcoursClassroomAssignment::create([
+                                'concours_id' => $concours->id,
+                                'candidat_id' => $candidatId,
+                                'classroom_id' => $classroom->id,
+                            ]);
+                        } else {
+                            \Illuminate\Support\Facades\Log::error("Classroom not found for local: $local");
+                            // Optionnel : tu peux aussi retourner une erreur ou ignorer selon le besoin
+                        }
                     }
                 }
                 \Illuminate\Support\Facades\Log::info('Candidats distributed to locaux', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds]);

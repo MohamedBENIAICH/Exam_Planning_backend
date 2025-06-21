@@ -106,7 +106,7 @@
         </div>
 
         <div class="update-banner">
-            <h2>⚠️ CONVOCATION MISE À JOUR</h2>
+            <h2>CONVOCATION MISE À JOUR</h2>
             <p><strong>Cette convocation remplace la précédente.</strong><br>
                 Veuillez prendre note des modifications apportées au concours.</p>
         </div>
@@ -140,7 +140,7 @@
             </div>
 
             <div class="qr-notice">
-                <h4>🔄 QR Code mis à jour</h4>
+                <h4>QR Code mis à jour</h4>
                 <p>Le QR code sur la nouvelle convocation a été mis à jour avec vos informations d'identification
                     actuelles.</p>
             </div>
