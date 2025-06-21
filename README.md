@@ -188,8 +188,8 @@ Le système intègre une gestion complète des présences et absences des étudi
 
 | N°  | CNE     | Nom    | Prénom | Email           | Niveau | Statut  |
 | --- | ------- | ------ | ------ | --------------- | ------ | ------- |
-| 1   | 2320382 | ABAHRI | Hatim  | hatim@email.com | L3     | Présent |
-| 2   | 2320383 | BENALI | Sara   | sara@email.com  | L3     | Absent  |
+| 1   | 2320382 | NOM | Ali  | ali@email.com | L3     | Présent |
+| 2   | 2320383 | NOM | Zineb   | zineb@email.com  | L3     | Absent  |
 
 Cette gestion permet un suivi précis et automatisé des absences lors des examens.
 
@@ -280,7 +280,7 @@ Nouvelles migrations appliquées :
 ## Dépannage
 
 -   **Le Backend ne démarre pas ?**
-    -   Vérifiez que votre serveur web (Apache/Nginx) et MySQL sont démarrés.
+    -   Vérifiez que votre serveur web (Apache) et MySQL sont démarrés.
     -   Assurez-vous que les identifiants de la base de données dans `.env` sont corrects et que la base de données existe.
     -   Exécutez `php artisan migrate` pour vous assurer que toutes les tables sont créées.
     -   Consultez les logs Laravel (`storage/logs/laravel.log`) pour des messages d'erreur détaillés.
