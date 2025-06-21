@@ -501,6 +501,19 @@ class ConcoursController extends Controller
                 return response()->json(['message' => 'Concours not found'], 404);
             }
 
+            $today = \Carbon\Carbon::today();
+            // Vérifier si le concours est déjà passé
+            $isPassed = $concours->date_concours < $today;
+
+            if ($isPassed) {
+                // Juste supprimer sans notification
+                $concours->delete();
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Concours (déjà passé) supprimé sans notification.'
+                ], 200);
+            }
+
             // Mettre à jour le statut pour les notifications
             $concours->status = 'annulé';
 

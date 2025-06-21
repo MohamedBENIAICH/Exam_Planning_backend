@@ -543,15 +543,30 @@ class ExamController extends Controller
         try {
             $exam = Exam::with(['students', 'superviseurs', 'professeurs', 'module'])->findOrFail($id);
 
-            // Send cancellation notifications before deleting
-            app(\App\Services\ExamNotificationService::class)->sendCancellationNotifications($exam);
+            $now = now();
+            $today = $now->toDateString();
+            $currentTime = $now->format('H:i:s');
 
-            // Delete the exam completely from database
+            // Vérifier si l'examen est déjà passé
+            $isPassed = ($exam->date_examen < $today) ||
+                ($exam->date_examen->format('Y-m-d') === $today && $exam->heure_fin->format('H:i:s') <= $currentTime);
+
+            if ($isPassed) {
+                // Juste supprimer sans notification
+                $exam->delete();
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Exam (déjà passé) supprimé sans notification.'
+                ], 200);
+            }
+
+            // Sinon, envoyer les notifications d'annulation avant suppression
+            app(\App\Services\ExamNotificationService::class)->sendCancellationNotifications($exam);
             $exam->delete();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Exam cancelled and deleted successfully'
+                'message' => 'Exam annulé et supprimé avec succès'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
