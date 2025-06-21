@@ -273,16 +273,13 @@ Route::prefix('concours')->group(function () {
     Route::put('/{id}', [ConcoursController::class, 'update']);
     Route::delete('/{id}', [ConcoursController::class, 'destroy']);
 
-    // New cancel route
-    Route::post('/{id}/cancel', [ConcoursController::class, 'cancel']);
-
     // Send updated convocations route
     Route::post('/{id}/send-updated-convocations', [ConcoursController::class, 'sendUpdatedConvocations']);
 
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
     Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);
-    
+
     // Classroom assignments for concours
     Route::prefix('{concours_id}')->group(function () {
         Route::prefix('classroom-assignments')->group(function () {

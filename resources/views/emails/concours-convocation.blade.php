@@ -56,7 +56,7 @@
 <body>
     <div class="header">
         <h1>Convocation au concours</h1>
-        <p>Faculté des Sciences et Techniques</p>
+        <p>Faculté des Sciences et Techniques de Marrakech</p>
     </div>
 
     <div class="content">
@@ -68,7 +68,16 @@
             <h3>{{ $concours['titre'] }}</h3>
             <p><strong>Date :</strong> {{ $concours['date'] }}</p>
             <p><strong>Heure :</strong> {{ $concours['heure_debut'] }} - {{ $concours['heure_fin'] }}</p>
-            <p><strong>Local :</strong> {{ $concours['locaux'] }}</p>
+            <p><strong>Locaux :</strong>
+                @php
+                    $locaux = json_decode($concours['locaux'], true);
+                    if (is_array($locaux)) {
+                        echo implode(', ', array_column($locaux, 'nom_du_local'));
+                    } else {
+                        echo $concours['locaux'];
+                    }
+                @endphp
+            </p>
             <p><strong>Type d'épreuve :</strong> {{ $concours['type_epreuve'] }}</p>
         </div>
 
@@ -79,6 +88,7 @@
         <ul>
             <li>Présentez-vous 30 minutes avant l'heure de début</li>
             <li>Apportez votre convocation et une pièce d'identité</li>
+            <li>Le QR code sur la convocation sera utilisé pour vérifier votre identité</li>
             <li>Respectez les consignes de sécurité</li>
         </ul>
 

@@ -183,7 +183,20 @@
             </div>
             <div class="info-item">
                 <span class="info-label">Locaux:</span>
-                <span class="info-value">{{ $concours->locaux }}</span>
+                <span class="info-value">
+                    @php
+                        $locaux = json_decode($concours->locaux, true);
+                        if (is_array($locaux)) {
+                            $localKeys = array_column($locaux, 'nom_du_local');
+                            if (empty(array_filter($localKeys))) {
+                                $localKeys = array_column($locaux, 'nom_local');
+                            }
+                            echo implode(', ', $localKeys);
+                        } else {
+                            echo $concours->locaux;
+                        }
+                    @endphp
+                </span>
             </div>
             <div class="info-item">
                 <span class="info-label">Type d'épreuve:</span>

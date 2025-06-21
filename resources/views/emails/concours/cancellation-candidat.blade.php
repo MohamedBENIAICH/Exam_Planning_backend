@@ -65,7 +65,20 @@
                 <li><strong>Date prévue :</strong> {{ $date }}</li>
                 <li><strong>Heure de début :</strong> {{ $heure_debut }}</li>
                 <li><strong>Heure de fin :</strong> {{ $heure_fin }}</li>
-                <li><strong>Local :</strong> {{ $locaux }}</li>
+                <li><strong>Local :</strong>
+                    @php
+                        $locaux = json_decode($concours->locaux, true);
+                        if (is_array($locaux)) {
+                            $localKeys = array_column($locaux, 'nom_du_local');
+                            if (empty(array_filter($localKeys))) {
+                                $localKeys = array_column($locaux, 'nom_local');
+                            }
+                            echo implode(', ', $localKeys);
+                        } else {
+                            echo $concours->locaux;
+                        }
+                    @endphp
+                </li>
                 <li><strong>Type d'épreuve :</strong> {{ $type_epreuve }}</li>
             </ul>
         </div>

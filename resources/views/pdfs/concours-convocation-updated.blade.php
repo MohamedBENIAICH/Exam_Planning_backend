@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convocation au concours</title>
+    <title>Convocation mise à jour - Concours</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +16,7 @@
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #2196f3;
+            border-bottom: 2px solid #ff6b35;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
@@ -24,7 +24,7 @@
         .logo {
             font-size: 24px;
             font-weight: bold;
-            color: #2196f3;
+            color: #ff6b35;
             margin-bottom: 10px;
         }
 
@@ -40,6 +40,21 @@
             color: #666;
         }
 
+        .update-notice {
+            background-color: #fff3cd;
+            border: 2px solid #ff6b35;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .update-notice h3 {
+            color: #ff6b35;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+
         .content {
             margin-bottom: 30px;
         }
@@ -53,8 +68,8 @@
         }
 
         .concours-info {
-            background-color: #e3f2fd;
-            border: 1px solid #2196f3;
+            background-color: #e8f4fd;
+            border: 1px solid #ff6b35;
             padding: 20px;
             margin: 20px 0;
             border-radius: 5px;
@@ -78,7 +93,7 @@
         }
 
         .schedule th {
-            background-color: #2196f3;
+            background-color: #ff6b35;
             color: white;
             font-weight: bold;
         }
@@ -86,7 +101,6 @@
         .schedule tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-
 
         .important {
             background-color: #fff3cd;
@@ -100,12 +114,25 @@
             margin-top: 50px;
             text-align: right;
         }
+
+        .qr-code-section {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .qr-code-section h4 {
+            color: #ff6b35;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
 <body>
     <div class="header">
-        <<div class="logo">
+        <div class="logo">
             @php
                 $logoPath = public_path('images/logofst.jpeg');
                 $logoBase64 = '';
@@ -120,9 +147,15 @@
                 <img src="{{ asset('images/logofst.jpeg') }}" alt="Logo de la faculté"
                     style="max-width: 200px; height: auto;">
             @endif
+        </div>
+        <div class="title">CONVOCATION MISE À JOUR</div>
+        <div class="subtitle">Concours - Année universitaire {{ $concours['year'] }}</div>
     </div>
-    <div class="title">CONVOCATION AU CONCOURS</div>
-    <div class="subtitle">Année universitaire {{ $concours['year'] }}</div>
+
+    <div class="update-notice">
+        <h3>⚠️ CONVOCATION MISE À JOUR</h3>
+        <p><strong>Cette convocation remplace la précédente.</strong> Veuillez prendre note des modifications apportées
+            au concours.</p>
     </div>
 
     <div class="content">
@@ -136,18 +169,19 @@
             @endif
 
             @if (isset($qrCodePath) && $qrCodePath)
-                <div style="margin-top: 20px; text-align: center;">
+                <div class="qr-code-section">
+                    <h4>QR Code d'identification mis à jour</h4>
                     <img src="{{ public_path('storage/' . str_replace(asset('storage/'), '', $qrCodePath)) }}"
-                        alt="QR Code" style="width: 100px; height: 100px; border: 1px solid #ddd;">
+                        alt="QR Code mis à jour" style="width: 100px; height: 100px; border: 2px solid #ff6b35;">
                     <p style="font-size: 10px; color: #666; margin-top: 5px;">
-                        Ce QR code contient vos informations d'identification pour le concours
+                        Ce QR code contient vos informations d'identification mises à jour pour le concours
                     </p>
                 </div>
             @endif
         </div>
 
         <div class="concours-info">
-            <h3>Détails du concours :</h3>
+            <h3>Détails mis à jour du concours :</h3>
             <p><strong>Titre :</strong> {{ $concours['titre'] }}</p>
             <p><strong>Date :</strong> {{ $concours['date'] }}</p>
             <p><strong>Heure de début :</strong> {{ $concours['heure_debut'] }}</p>
@@ -173,7 +207,7 @@
         </div>
 
         <div class="schedule">
-            <h3>Planning du concours :</h3>
+            <h3>Planning mis à jour du concours :</h3>
             <table>
                 <thead>
                     <tr>
@@ -197,10 +231,12 @@
         </div>
 
         <div class="important">
-            <h4>IMPORTANT :</h4>
+            <h4>⚠️ IMPORTANT - MODIFICATIONS APPORTÉES :</h4>
             <ul>
+                <li>Cette convocation <strong>remplace complètement</strong> la précédente</li>
                 <li>Présentez-vous <strong>30 minutes avant l'heure de début</strong></li>
-                <li>Apportez <strong>cette convocation</strong> et votre <strong>pièce d'identité</strong></li>
+                <li>Apportez <strong>cette nouvelle convocation</strong> et votre <strong>pièce d'identité</strong></li>
+                <li>Le QR code a été mis à jour avec vos informations actuelles</li>
                 <li>Respectez les consignes de sécurité et les règles du concours</li>
                 <li>Tout retard pourra entraîner l'exclusion du concours</li>
             </ul>

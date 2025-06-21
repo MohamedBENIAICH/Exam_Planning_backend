@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::table('concours', function (Blueprint $table) {
             $table->text('locaux')->nullable()->change();
         });
-        
+
         // Then convert to JSON using raw SQL
         DB::statement('ALTER TABLE concours MODIFY locaux JSON');
     }

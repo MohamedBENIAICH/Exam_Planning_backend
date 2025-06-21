@@ -56,7 +56,7 @@
 <body>
     <div class="header">
         <h1>Convocation pour la Surveillance du Concours</h1>
-        <p>Faculté des Sciences et Techniques</p>
+        <p>Faculté des Sciences et Techniques de Marrakech</p>
     </div>
 
     <div class="content">
@@ -67,10 +67,22 @@
 
         <div class="info-box">
             <h3>{{ $concours->titre }}</h3>
-            <p><strong>Date :</strong> {{ \Carbon\Carbon::parse($concours->date_concours)->format('d/m/Y') }}</p>
-            <p><strong>Heure :</strong> {{ \Carbon\Carbon::parse($concours->heure_debut)->format('H:i') }} -
-                {{ \Carbon\Carbon::parse($concours->heure_fin)->format('H:i') }}</p>
-            <p><strong>Local :</strong> {{ $concours->locaux ?: 'Non spécifié' }}</p>
+            <p><strong>Date :</strong> {{ $concours->date_concours }}</p>
+            <p><strong>Heure :</strong> {{ $concours->heure_debut }} - {{ $concours->heure_fin }}</p>
+            <p><strong>Locaux :</strong>
+                @php
+                    $locaux = json_decode($concours->locaux, true);
+                    if (is_array($locaux)) {
+                        $localKeys = array_column($locaux, 'nom_du_local');
+                        if (empty(array_filter($localKeys))) {
+                            $localKeys = array_column($locaux, 'nom_local');
+                        }
+                        echo implode(', ', $localKeys);
+                    } else {
+                        echo $concours->locaux;
+                    }
+                @endphp
+            </p>
             <p><strong>Type d'épreuve :</strong> {{ $concours->type_epreuve }}</p>
             @if ($concours->description)
                 <p><strong>Description :</strong> {{ $concours->description }}</p>

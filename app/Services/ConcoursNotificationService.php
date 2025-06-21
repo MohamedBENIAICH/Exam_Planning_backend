@@ -9,9 +9,17 @@ use App\Mail\ConcoursSurveillanceNotification;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ConcoursNotificationService
 {
+    protected $qrCodeService;
+
+    public function __construct(QRCodeService $qrCodeService)
+    {
+        $this->qrCodeService = $qrCodeService;
+    }
+
     /**
      * Send notifications when a new concours is created
      *
@@ -23,7 +31,7 @@ class ConcoursNotificationService
         try {
             // Load relationships
             $concours->load(['candidats', 'superviseurs', 'professeurs']);
-            
+
             Log::info('Sending concours created notifications', [
                 'concours_id' => $concours->id,
                 'titre' => $concours->titre,
@@ -31,10 +39,9 @@ class ConcoursNotificationService
                 'superviseurs_count' => $concours->superviseurs->count(),
                 'professeurs_count' => $concours->professeurs->count()
             ]);
-            
+
             // Send notifications to all involved parties
             $this->generateAndSendNotifications($concours);
-            
         } catch (\Exception $e) {
             Log::error('Failed to send concours created notifications', [
                 'concours_id' => $concours->id ?? null,
@@ -44,7 +51,7 @@ class ConcoursNotificationService
             // Don't rethrow the exception to prevent breaking the concours creation flow
         }
     }
-    
+
     public function generateAndSendNotifications(Concours $concours)
     {
         // Load all necessary relationships
@@ -191,8 +198,106 @@ class ConcoursNotificationService
         }
     }
 
+    // Méthode pour générer le PDF de convocation mise à jour
+    public function generateUpdatedConvocationPDF(Candidat $candidat, Concours $concours)
+    {
+        // Vérification des données
+        if (!is_object($candidat) || empty($candidat->nom) || empty($candidat->prenom) || empty($candidat->CNE)) {
+            Log::error('Données candidat invalides pour la mise à jour', [
+                'candidat_id' => $candidat->id,
+                'nom' => $candidat->nom,
+                'prenom' => $candidat->prenom,
+                'cne' => $candidat->CNE,
+            ]);
+            throw new \Exception("Les données du candidat sont invalides pour la mise à jour.");
+        }
+
+        // Générer le QR code pour le candidat
+        try {
+            $qrData = [
+                'nom' => $candidat->nom,
+                'prenom' => $candidat->prenom,
+                'CNE' => $candidat->CNE,
+                'CIN' => $candidat->CIN ?? ''
+            ];
+
+            // Générer le QR code
+            $qrCodePath = $this->qrCodeService->generateQRCode($qrData);
+
+            Log::info('QR code mis à jour pour le candidat', [
+                'candidat_id' => $candidat->id,
+                'qr_code_path' => $qrCodePath,
+                'qr_data' => $qrData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la génération du QR code mis à jour pour le candidat', [
+                'candidat_id' => $candidat->id,
+                'error' => $e->getMessage()
+            ]);
+            // Continuer sans QR code si la génération échoue
+            $qrCodePath = null;
+        }
+
+        // Calcul de la durée du concours
+        $duree = '2h'; // Valeur par défaut
+        if ($concours->heure_debut && $concours->heure_fin) {
+            try {
+                $debut = \Carbon\Carbon::parse($concours->heure_debut);
+                $fin = \Carbon\Carbon::parse($concours->heure_fin);
+                $diff = $debut->diff($fin);
+                $duree = $diff->h . 'h' . ($diff->i > 0 ? $diff->i . 'min' : '');
+            } catch (\Exception $e) {
+                Log::error('Erreur lors du calcul de la durée pour la mise à jour', [
+                    'error' => $e->getMessage(),
+                    'heure_debut' => $concours->heure_debut,
+                    'heure_fin' => $concours->heure_fin
+                ]);
+            }
+        }
+
+        $data = [
+            'candidat' => $candidat,
+            'concours' => [
+                'titre' => $concours->titre,
+                'date' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('d/m/Y') : 'Date non spécifiée',
+                'heure_debut' => $concours->heure_debut ? \Carbon\Carbon::parse($concours->heure_debut) : 'Heure non spécifiée',
+                'heure_fin' => $concours->heure_fin ? \Carbon\Carbon::parse($concours->heure_fin) : 'Heure non spécifiée',
+                'locaux' => $concours->locaux ?: 'Local non spécifié',
+                'type_epreuve' => $concours->type_epreuve,
+                'description' => $concours->description,
+                'year' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('Y') : date('Y'),
+                'month' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('F') : date('F')
+            ],
+            'concoursSchedule' => [
+                [
+                    'jour' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('d/m/Y') : 'Date non spécifiée',
+                    'concours' => $concours->titre,
+                    'duree' => $duree,
+                    'horaire' => $concours->heure_debut ? \Carbon\Carbon::parse($concours->heure_debut)->format('H:i') . ' - ' . \Carbon\Carbon::parse($concours->heure_fin)->format('H:i') : 'Horaire non spécifié',
+                    'color' => 'orange'
+                ]
+            ],
+            'qrCodePath' => $qrCodePath ? asset('storage/' . $qrCodePath) : null
+        ];
+
+        Log::info('Données pour le PDF de mise à jour', [
+            'candidat' => [
+                'id' => $candidat->id,
+                'nom' => $candidat->nom,
+                'prenom' => $candidat->prenom,
+                'cne' => $candidat->CNE
+            ],
+            'concours' => $data['concours'],
+            'qr_code_path' => $qrCodePath
+        ]);
+
+        // Générer le PDF avec la vue spécifique pour les mises à jour
+        $pdf = PDF::loadView('pdfs.concours-convocation-updated', $data);
+        return $pdf->output();
+    }
+
     // Méthode pour générer le PDF
-    protected function generateConvocationPDF(Candidat $candidat, Concours $concours)
+    public function generateConvocationPDF(Candidat $candidat, Concours $concours)
     {
         // Vérification des données
         if (!is_object($candidat) || empty($candidat->nom) || empty($candidat->prenom) || empty($candidat->CNE)) {
@@ -203,6 +308,32 @@ class ConcoursNotificationService
                 'cne' => $candidat->CNE,
             ]);
             throw new \Exception("Les données du candidat sont invalides.");
+        }
+
+        // Générer le QR code pour le candidat
+        try {
+            $qrData = [
+                'nom' => $candidat->nom,
+                'prenom' => $candidat->prenom,
+                'CNE' => $candidat->CNE,
+                'CIN' => $candidat->CIN ?? ''
+            ];
+
+            // Générer le QR code
+            $qrCodePath = $this->qrCodeService->generateQRCode($qrData);
+
+            Log::info('QR code généré pour le candidat', [
+                'candidat_id' => $candidat->id,
+                'qr_code_path' => $qrCodePath,
+                'qr_data' => $qrData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la génération du QR code pour le candidat', [
+                'candidat_id' => $candidat->id,
+                'error' => $e->getMessage()
+            ]);
+            // Continuer sans QR code si la génération échoue
+            $qrCodePath = null;
         }
 
         // Calcul de la durée du concours
@@ -243,7 +374,8 @@ class ConcoursNotificationService
                     'horaire' => $concours->heure_debut ? \Carbon\Carbon::parse($concours->heure_debut)->format('H:i') . ' - ' . \Carbon\Carbon::parse($concours->heure_fin)->format('H:i') : 'Horaire non spécifié',
                     'color' => 'blue'
                 ]
-            ]
+            ],
+            'qrCodePath' => $qrCodePath ? asset('storage/' . $qrCodePath) : null
         ];
 
         Log::info('Données pour le PDF', [
@@ -253,7 +385,8 @@ class ConcoursNotificationService
                 'prenom' => $candidat->prenom,
                 'cne' => $candidat->CNE
             ],
-            'concours' => $data['concours']
+            'concours' => $data['concours'],
+            'qr_code_path' => $qrCodePath
         ]);
 
         // Générer le PDF
@@ -567,7 +700,7 @@ class ConcoursNotificationService
                 }
 
                 // Generate updated PDF convocation
-                $pdf = $this->generateConvocationPDF($candidat, $concours);
+                $pdf = $this->generateUpdatedConvocationPDF($candidat, $concours);
 
                 // Prepare email data
                 $emailData = [
@@ -583,7 +716,7 @@ class ConcoursNotificationService
                 ];
 
                 // Send updated convocation
-                Mail::to($candidat->email)->send(new \App\Mail\ConcoursConvocation($candidat, $emailData));
+                Mail::to($candidat->email)->send(new \App\Mail\ConcoursConvocationUpdated($candidat, $emailData));
 
                 Log::info('Updated convocation sent successfully to candidat', [
                     'candidat_id' => $candidat->id,
