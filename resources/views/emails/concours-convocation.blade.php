@@ -72,7 +72,11 @@
                 @php
                     $locaux = json_decode($concours['locaux'], true);
                     if (is_array($locaux)) {
-                        echo implode(', ', array_column($locaux, 'nom_du_local'));
+                        $localKeys = array_column($locaux, 'nom_du_local');
+                        if (empty(array_filter($localKeys))) {
+                            $localKeys = array_column($locaux, 'nom_local');
+                        }
+                        echo implode(', ', $localKeys);
                     } else {
                         echo $concours['locaux'];
                     }
