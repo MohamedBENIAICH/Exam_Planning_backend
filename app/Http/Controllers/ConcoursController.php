@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Concours;
 use App\Models\Candidat;
+use App\Models\ConcoursClassroomAssignment;
 use App\Services\ConcoursNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -28,80 +29,276 @@ class ConcoursController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'titre' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'date_concours' => 'required|date',
-            'heure_debut' => 'required',
-            'heure_fin' => 'required',
-            'locaux' => 'nullable|string',
-            'type_epreuve' => 'required|in:écrit,oral',
-            'candidats' => 'nullable|array',
-            'candidats.*.CNE' => 'required|string|max:255',
-            'candidats.*.CIN' => 'required|string|max:255',
-            'candidats.*.nom' => 'required|string|max:255',
-            'candidats.*.prenom' => 'required|string|max:255',
-            'candidats.*.email' => 'required|email|max:255',
-            'superviseurs' => 'nullable|array',
-            'superviseurs.*' => 'integer|exists:superviseurs,id',
-            'professeurs' => 'nullable|array',
-            'professeurs.*' => 'integer|exists:professeurs,id',
-        ]);
-
-        // Vérifier la disponibilité des salles
-        if ($validated['locaux']) {
-            $locaux = explode(',', $validated['locaux']);
-            $conflicts = $this->checkSalleAvailability($validated['date_concours'], $validated['heure_debut'], $validated['heure_fin'], $locaux);
+        // Log the raw request data
+        \Log::info('Raw request data:', $request->all());
+        
+        // Start database transaction
+        \DB::beginTransaction();
+        
+        try {
+            // First, validate basic fields
+            $validated = $request->validate([
+                'titre' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'date_concours' => 'required|date',
+                'heure_debut' => 'required|date_format:H:i',
+                'heure_fin' => 'required|date_format:H:i|after:heure_debut',
+                'type_epreuve' => 'required|string|in:écrit,oral,pratique',
+                'locaux' => 'required', // We'll validate this manually
+                'candidats' => 'required', // We'll validate this manually
+                'superviseurs' => 'required|array|min:1',
+                'superviseurs.*' => 'exists:superviseurs,id',
+                'professeurs' => 'required|array|min:1',
+                'professeurs.*' => 'exists:professeurs,id',
+            ]);
+            
+            // Process locaux
+            $locaux = $validated['locaux'];
+            if (is_string($locaux)) {
+                $locaux = json_decode($locaux, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \Exception('Invalid JSON in locaux field: ' . json_last_error_msg());
+                }
+            }
+            
+            if (!is_array($locaux) || empty($locaux)) {
+                throw new \Exception('locaux must be a non-empty array');
+            }
+            
+            // Validate each local
+            foreach ($locaux as $local) {
+                if (!is_array($local) || !isset($local['nom_local']) || !isset($local['capacity'])) {
+                    throw new \Exception('Each local must have nom_local and capacity fields');
+                }
+            }
+            
+            // Process candidats
+            $candidats = $validated['candidats'];
+            if (is_string($candidats)) {
+                $candidats = json_decode($candidats, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \Exception('Invalid JSON in candidats field: ' . json_last_error_msg());
+                }
+            }
+            
+            if (!is_array($candidats) || empty($candidats)) {
+                throw new \Exception('candidats must be a non-empty array');
+            }
+            
+            // Check room availability
+            $locauxNames = array_column($locaux, 'nom_local');
+            $conflicts = $this->checkSalleAvailability(
+                $validated['date_concours'],
+                $validated['heure_debut'],
+                $validated['heure_fin'],
+                $locauxNames
+            );
 
             if (!empty($conflicts)) {
                 return response()->json([
-                    'message' => 'Conflit de disponibilité des salles',
+                    'status' => 'error',
+                    'message' => 'Salle non disponible',
                     'conflicts' => $conflicts
                 ], 409);
             }
-        }
-
-        $concours = Concours::create($validated);
-
-        // Process and attach candidats
-        if (isset($validated['candidats'])) {
-            $candidatIds = [];
-            foreach ($validated['candidats'] as $candidatData) {
-                $candidat = Candidat::firstOrCreate(
-                    ['CNE' => $candidatData['CNE']],
+            
+            // Store locaux as JSON
+            $validated['locaux'] = json_encode($locaux);
+            
+            // Create concours
+            $concours = Concours::create($validated);
+            
+            // Process classrooms
+            $classrooms = [];
+            foreach ($locaux as $local) {
+                // First, find or create the classroom
+                $classroom = \App\Models\Classroom::firstOrCreate(
+                    ['nom_du_local' => $local['nom_local']],
                     [
-                        'CIN' => $candidatData['CIN'],
-                        'nom' => $candidatData['nom'],
-                        'prenom' => $candidatData['prenom'],
-                        'email' => $candidatData['email'],
+                        'nom_du_local' => $local['nom_local'],
+                        'capacite' => (int)$local['capacity'],
+                        'departement' => 'Concours',
+                        'liste_des_equipements' => json_encode(['tables', 'chaises'])
                     ]
                 );
-                $candidatIds[] = $candidat->id;
+
+                // Update capacity if it's different
+                if ($classroom->capacite != (int)$local['capacity']) {
+                    $classroom->update(['capacite' => (int)$local['capacity']]);
+                }
+                
+                $classrooms[] = $classroom;
             }
-            $concours->candidats()->attach($candidatIds);
-        }
-
-        if (isset($validated['superviseurs'])) {
-            $concours->superviseurs()->attach($validated['superviseurs']);
-        }
-        if (isset($validated['professeurs'])) {
-            $concours->professeurs()->attach($validated['professeurs']);
-        }
-
-        $concours->load(['candidats', 'superviseurs', 'professeurs']);
-
-        // Envoyer automatiquement les notifications de surveillance
-        try {
-            $this->concoursNotificationService->sendSurveillanceNotifications($concours);
-            Log::info('Notifications de surveillance envoyées pour le concours', ['concours_id' => $concours->id]);
+            
+            // Process and attach candidats
+            $candidatIds = [];
+            $candidatModels = [];
+            
+            foreach ($candidats as $candidatData) {
+                try {
+                    // First try to find by CNE or CIN
+                    $candidat = Candidat::where('CNE', $candidatData['CNE'])
+                        ->orWhere('CIN', $candidatData['CIN'])
+                        ->first();
+                    
+                    // If not found, create a new one
+                    if (!$candidat) {
+                        $candidat = Candidat::create([
+                            'CNE' => $candidatData['CNE'],
+                            'CIN' => $candidatData['CIN'],
+                            'nom' => $candidatData['nom'],
+                            'prenom' => $candidatData['prenom'],
+                            'email' => $candidatData['email']
+                        ]);
+                    }
+                    
+                    $candidatIds[] = $candidat->id;
+                    $candidatModels[] = $candidat;
+                    
+                } catch (\Exception $e) {
+                    // If there's an error (like duplicate CIN), try to find the existing candidate
+                    $candidat = Candidat::where('CIN', $candidatData['CIN'])->first();
+                    if ($candidat) {
+                        $candidatIds[] = $candidat->id;
+                        $candidatModels[] = $candidat;
+                    } else {
+                        throw $e; // Re-throw if we can't handle it
+                    }
+                }
+            }
+            
+            // Attach candidates to concours
+            $concours->candidats()->sync($candidatIds);
+            
+            // Attach supervisors and professors
+            $concours->superviseurs()->sync($validated['superviseurs']);
+            $concours->professeurs()->sync($validated['professeurs']);
+            
+            // Distribute candidates to classrooms
+            $this->distributeCandidates($concours, $candidatModels, $classrooms);
+            
+            // Commit the transaction
+            \DB::commit();
+            
+            // Send notifications
+            try {
+                $this->concoursNotificationService->sendConcoursCreatedNotifications($concours);
+            } catch (\Exception $e) {
+                // Log the error but don't fail the request
+                \Log::error('Failed to send notifications: ' . $e->getMessage());
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Concours created successfully',
+                'data' => $concours->load(['candidats', 'superviseurs', 'professeurs'])
+            ], 201);
+            
         } catch (\Exception $e) {
-            Log::error('Erreur lors de l\'envoi des notifications de surveillance', [
-                'concours_id' => $concours->id,
-                'error' => $e->getMessage()
+            // Rollback the transaction on error
+            \DB::rollBack();
+            \Log::error('Error creating concours: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create concours',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        return response()->json($concours, 201);
+    /**
+     * Distribute candidates to classrooms for an exam
+     *
+     * @param \App\Models\Concours $concours
+     * @param array $candidates
+     * @param array $classrooms
+     * @return void
+     */
+    protected function distributeCandidates($concours, $candidates, $classrooms)
+    {
+        $currentClassroomIndex = 0;
+        $seatNumber = 1;
+        
+        // First, delete any existing assignments for this concours to avoid duplicates
+        // but only if we have candidates to assign
+        if (count($candidates) > 0) {
+            \App\Models\ConcoursClassroomAssignment::where('concours_id', $concours->id)->delete();
+        }
+        
+        // Track assigned candidate IDs to prevent duplicates in this distribution
+        $assignedCandidateIds = [];
+        
+        foreach ($candidates as $candidate) {
+            // Skip if this candidate is already assigned in this distribution
+            if (in_array($candidate->id, $assignedCandidateIds)) {
+                continue;
+            }
+            
+            // If we've gone through all classrooms, log a warning and continue with the first classroom
+            if ($currentClassroomIndex >= count($classrooms)) {
+                \Log::warning('Not enough classrooms for all candidates in concours', [
+                    'concours_id' => $concours->id,
+                    'candidate_count' => count($candidates),
+                    'classroom_count' => count($classrooms)
+                ]);
+                $currentClassroomIndex = 0;
+                $seatNumber = 1;
+            }
+            
+            $classroom = $classrooms[$currentClassroomIndex];
+            
+            try {
+                // First check if this candidate is already assigned to this concours
+                $existingAssignment = \App\Models\ConcoursClassroomAssignment::where('concours_id', $concours->id)
+                    ->where('candidat_id', $candidate->id)
+                    ->first();
+                
+                if ($existingAssignment) {
+                    // Update existing assignment
+                    $existingAssignment->update([
+                        'classroom_id' => $classroom->id,
+                        'seat_number' => $seatNumber,
+                        'status' => 'scheduled'
+                    ]);
+                } else {
+                    // Create new assignment
+                    $assignment = new \App\Models\ConcoursClassroomAssignment([
+                        'concours_id' => $concours->id,
+                        'classroom_id' => $classroom->id,
+                        'candidat_id' => $candidate->id,
+                        'seat_number' => $seatNumber,
+                        'status' => 'scheduled'
+                    ]);
+                    $assignment->save();
+                }
+                
+                // Add to assigned candidates for this distribution
+                $assignedCandidateIds[] = $candidate->id;
+                
+                // Move to next seat
+                $seatNumber++;
+                
+                // If classroom is full, move to next classroom
+                if ($seatNumber > $classroom->capacite) {
+                    $currentClassroomIndex++;
+                    $seatNumber = 1;
+                }
+                
+            } catch (\Exception $e) {
+                // Log the error and continue with the next candidate
+                \Log::error('Error assigning candidate to classroom: ' . $e->getMessage(), [
+                    'concours_id' => $concours->id,
+                    'candidat_id' => $candidate->id,
+                    'classroom_id' => $classroom->id,
+                    'seat_number' => $seatNumber,
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        }
     }
 
     public function show($id)
@@ -110,7 +307,21 @@ class ConcoursController extends Controller
         if (!$concours) {
             return response()->json(['message' => 'Concours not found'], 404);
         }
-        return response()->json($concours);
+
+        // Fetch candidats with their assigned local
+        $candidats = $concours->candidats->map(function($candidat) use ($concours) {
+            $assignment = \App\Models\ConcoursCandidatLocal::where('concours_id', $concours->id)
+                ->where('candidat_id', $candidat->id)
+                ->first();
+            $candidatArr = $candidat->toArray();
+            $candidatArr['local'] = $assignment ? $assignment->local : null;
+            return $candidatArr;
+        });
+
+        $concoursArr = $concours->toArray();
+        $concoursArr['candidats'] = $candidats;
+
+        return response()->json($concoursArr);
     }
 
     public function update(Request $request, $id)
@@ -181,6 +392,59 @@ class ConcoursController extends Controller
                 $candidatIds[] = $candidat->id;
             }
             $concours->candidats()->sync($candidatIds);
+
+            // Robust distribution of candidats across locaux and save assignments (store method)
+            $locauxToUse = [];
+            if (isset($validated['locaux']) && $validated['locaux']) {
+                $locauxToUse = is_array($validated['locaux']) ? $validated['locaux'] : explode(',', $validated['locaux']);
+            } elseif ($concours->locaux) {
+                $locauxToUse = explode(',', $concours->locaux);
+            }
+
+            if (!empty($candidatIds) && !empty($locauxToUse)) {
+                \App\Models\ConcoursCandidatLocal::where('concours_id', $concours->id)->delete();
+                $chunks = array_chunk($candidatIds, ceil(count($candidatIds) / count($locauxToUse)));
+                foreach ($chunks as $i => $chunk) {
+                    $local = $locauxToUse[$i];
+                    foreach ($chunk as $candidatId) {
+                        \App\Models\ConcoursCandidatLocal::create([
+                            'concours_id' => $concours->id,
+                            'candidat_id' => $candidatId,
+                            'local' => $local,
+                        ]);
+                    }
+                }
+                \Log::info('Candidats distributed to locaux (store)', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds]);
+            } else {
+                \Log::warning('Distribution skipped in store: missing candidats or locaux', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds ?? []]);
+            }
+
+            \DB::commit();
+            // Robust distribution of candidats across locaux and save assignments
+            $locauxToUse = [];
+            if (isset($validated['locaux']) && $validated['locaux']) {
+                $locauxToUse = is_array($validated['locaux']) ? $validated['locaux'] : explode(',', $validated['locaux']);
+            } elseif ($concours->locaux) {
+                $locauxToUse = explode(',', $concours->locaux);
+            }
+
+            if (!empty($candidatIds) && !empty($locauxToUse)) {
+                \App\Models\ConcoursCandidatLocal::where('concours_id', $concours->id)->delete();
+                $chunks = array_chunk($candidatIds, ceil(count($candidatIds) / count($locauxToUse)));
+                foreach ($chunks as $i => $chunk) {
+                    $local = $locauxToUse[$i];
+                    foreach ($chunk as $candidatId) {
+                        \App\Models\ConcoursCandidatLocal::create([
+                            'concours_id' => $concours->id,
+                            'candidat_id' => $candidatId,
+                            'local' => $local,
+                        ]);
+                    }
+                }
+                \Log::info('Candidats distributed to locaux', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds]);
+            } else {
+                \Log::warning('Distribution skipped: missing candidats or locaux', ['concours_id' => $concours->id, 'locaux' => $locauxToUse, 'candidats' => $candidatIds ?? []]);
+            }
         }
 
         if (isset($validated['superviseurs'])) {
@@ -371,6 +635,32 @@ class ConcoursController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Retrieve all passed concours (date_concours < today).
+     */
+    public function passed()
+    {
+        $today = \Carbon\Carbon::today();
+        $concours = \App\Models\Concours::where('date_concours', '<', $today)
+            ->with(['candidats', 'superviseurs', 'professeurs'])
+            ->orderBy('date_concours', 'desc')
+            ->get();
+        return response()->json($concours);
+    }
+
+    /**
+     * Retrieve all upcoming concours (date_concours >= today).
+     */
+    public function upcoming()
+    {
+        $today = \Carbon\Carbon::today();
+        $concours = \App\Models\Concours::where('date_concours', '>=', $today)
+            ->with(['candidats', 'superviseurs', 'professeurs'])
+            ->orderBy('date_concours', 'asc')
+            ->get();
+        return response()->json($concours);
     }
 
     /**

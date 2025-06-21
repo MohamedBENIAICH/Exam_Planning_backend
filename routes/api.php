@@ -16,6 +16,7 @@ use App\Http\Controllers\ExamNotificationController;
 use App\Http\Controllers\ProfesseurController;
 use App\Http\Controllers\CandidatController;
 use App\Http\Controllers\ConcoursController;
+use App\Http\Controllers\ConcoursClassroomAssignmentController;
 use App\Http\Controllers\SetupController;
 
 /*
@@ -260,6 +261,9 @@ Route::prefix('concours')->group(function () {
     Route::get('/', [ConcoursController::class, 'index']);
     Route::post('/', [ConcoursController::class, 'store']);
 
+    Route::get('/passed', [ConcoursController::class, 'passed']);
+    Route::get('/upcoming', [ConcoursController::class, 'upcoming']);
+
     // Specific routes first to avoid conflicts with {id} routes
     Route::get('/latest', [ConcoursController::class, 'latest']);
     Route::post('/check-salle-availability', [ConcoursController::class, 'checkSalleAvailabilityAPI']);
@@ -278,6 +282,16 @@ Route::prefix('concours')->group(function () {
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
     Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);
+    
+    // Classroom assignments for concours
+    Route::prefix('{concours_id}')->group(function () {
+        Route::prefix('classroom-assignments')->group(function () {
+            Route::post('/', [ConcoursClassroomAssignmentController::class, 'store']);
+            Route::get('/', [ConcoursClassroomAssignmentController::class, 'show']);
+            Route::delete('/', [ConcoursClassroomAssignmentController::class, 'destroy']);
+            Route::get('/available-classrooms', [ConcoursClassroomAssignmentController::class, 'getAvailableClassrooms']);
+        });
+    });
 });
 
 Route::get('/test-public', function () {

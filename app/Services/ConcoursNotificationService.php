@@ -12,6 +12,39 @@ use Illuminate\Support\Facades\Log;
 
 class ConcoursNotificationService
 {
+    /**
+     * Send notifications when a new concours is created
+     *
+     * @param \App\Models\Concours $concours
+     * @return void
+     */
+    public function sendConcoursCreatedNotifications(Concours $concours)
+    {
+        try {
+            // Load relationships
+            $concours->load(['candidats', 'superviseurs', 'professeurs']);
+            
+            Log::info('Sending concours created notifications', [
+                'concours_id' => $concours->id,
+                'titre' => $concours->titre,
+                'candidats_count' => $concours->candidats->count(),
+                'superviseurs_count' => $concours->superviseurs->count(),
+                'professeurs_count' => $concours->professeurs->count()
+            ]);
+            
+            // Send notifications to all involved parties
+            $this->generateAndSendNotifications($concours);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to send concours created notifications', [
+                'concours_id' => $concours->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't rethrow the exception to prevent breaking the concours creation flow
+        }
+    }
+    
     public function generateAndSendNotifications(Concours $concours)
     {
         // Load all necessary relationships

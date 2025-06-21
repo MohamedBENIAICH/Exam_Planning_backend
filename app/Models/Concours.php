@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ConcoursClassroomAssignment;
 
 class Concours extends Model
 {
@@ -20,6 +21,11 @@ class Concours extends Model
         'status'
     ];
 
+    protected $casts = [
+        'date_concours' => 'date',
+        'locaux' => 'array',
+    ];
+
     public function candidats()
     {
         return $this->belongsToMany(Candidat::class, 'concours_candidat');
@@ -33,5 +39,13 @@ class Concours extends Model
     public function professeurs()
     {
         return $this->belongsToMany(Professeur::class, 'concours_professeur');
+    }
+
+    /**
+     * Get the classroom assignments for the concours.
+     */
+    public function classroomAssignments()
+    {
+        return $this->hasMany(ConcoursClassroomAssignment::class);
     }
 }
