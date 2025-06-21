@@ -305,8 +305,8 @@ Le QR code contient les informations suivantes au format JSON :
 
 ```json
 {
-    "nom": "ABAHRI",
-    "prenom": "Hatim",
+    "nom": "son nom",
+    "prenom": "son prenom",
     "CNE": "2320382",
     "CIN": "570161"
 }
