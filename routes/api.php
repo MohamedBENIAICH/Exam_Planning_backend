@@ -95,7 +95,7 @@ Route::prefix('classrooms')->group(function () {
     Route::post('/schedule-exam', [ClassroomController::class, 'scheduleExam']);
     Route::post('/not-in-list', [ClassroomController::class, 'getClassroomsNotInList']);
     Route::get('/amphitheaters', [ClassroomController::class, 'getAmphitheaters']);
-
+    Route::get('/by-departement', [ClassroomController::class, 'getClassroomsByDepartment']);
     // Standard CRUD
     Route::get('/', [ClassroomController::class, 'index']);
     Route::post('/', [ClassroomController::class, 'store']);

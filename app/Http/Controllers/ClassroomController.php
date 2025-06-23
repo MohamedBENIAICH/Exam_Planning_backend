@@ -706,6 +706,38 @@ class ClassroomController extends Controller
             ], 500);
         }
     }
+    public function getClassroomsByDepartment(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'departement' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $classrooms = Classroom::where('departement', $request->departement)
+                ->whereRaw('LOWER(nom_du_local) NOT LIKE ?', ['amphi%'])
+                ->orderBy('nom_du_local')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $classrooms
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve classrooms by department',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * @OA\Post(
