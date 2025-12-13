@@ -664,8 +664,8 @@ class ExamNotificationService
                     ]
                 ];
 
-                // Send updated convocation
-                Mail::to($student->email)->send(new \App\Mail\ExamConvocation($student, $emailData));
+                // Send updated convocation using the ExamConvocationUpdated mail class
+                Mail::to($student->email)->send(new \App\Mail\ExamConvocationUpdated($student, $emailData));
 
                 Log::info('Updated convocation sent successfully to student', [
                     'student_id' => $student->id,

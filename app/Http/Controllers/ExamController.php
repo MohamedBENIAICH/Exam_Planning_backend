@@ -506,57 +506,8 @@ class ExamController extends Controller
             // Load the exam with its relationships
             $exam->load(['students', 'module', 'classrooms']);
 
-            // Send notifications to supervisors
-            if ($request->has('superviseurs')) {
-                $superviseurNames = explode(',', $request->superviseurs);
-                foreach ($superviseurNames as $name) {
-                    $nameParts = explode(' ', trim($name));
-                    if (count($nameParts) >= 2) {
-                        $superviseur = Superviseur::where('prenom', $nameParts[0])
-                            ->where('nom', $nameParts[1])
-                            ->first();
-
-                        if ($superviseur && $superviseur->email) {
-                            try {
-                                Mail::to($superviseur->email)
-                                    ->send(new ExamSurveillanceNotification($exam, $name));
-
-                                Log::info("Notification envoyée au superviseur: {$name} ({$superviseur->email})");
-                            } catch (\Exception $e) {
-                                Log::error("Erreur d'envoi d'email au superviseur {$name}: " . $e->getMessage());
-                            }
-                        } else {
-                            Log::warning("Superviseur non trouvé ou email manquant: {$name}");
-                        }
-                    }
-                }
-            }
-
-            // Send notifications to professors
-            if ($request->has('professeurs')) {
-                $professeurNames = explode(',', $request->professeurs);
-                foreach ($professeurNames as $name) {
-                    $nameParts = explode(' ', trim($name));
-                    if (count($nameParts) >= 2) {
-                        $professeur = Professeur::where('prenom', $nameParts[0])
-                            ->where('nom', $nameParts[1])
-                            ->first();
-
-                        if ($professeur && $professeur->email) {
-                            try {
-                                Mail::to($professeur->email)
-                                    ->send(new ExamSurveillanceNotification($exam, $name));
-
-                                Log::info("Notification envoyée au professeur: {$name} ({$professeur->email})");
-                            } catch (\Exception $e) {
-                                Log::error("Erreur d'envoi d'email au professeur {$name}: " . $e->getMessage());
-                            }
-                        } else {
-                            Log::warning("Professeur non trouvé ou email manquant: {$name}");
-                        }
-                    }
-                }
-            }
+            // Note: Email notifications are no longer sent automatically on exam creation
+            // Use the dedicated endpoints to send notifications to supervisors/professors and students
 
             return response()->json([
                 'status' => 'success',
@@ -1080,6 +1031,10 @@ class ExamController extends Controller
                     'locaux' => $locaux,
                     'superviseurs' => $superviseursNames,
                     'professeurs' => $professeursNames,
+                    'supervisors_notified' => $exam->supervisors_notified ?? false,
+                    'students_notified' => $exam->students_notified ?? false,
+                    'supervisors_notified_at' => $exam->supervisors_notified_at ? $exam->supervisors_notified_at->toISOString() : null,
+                    'students_notified_at' => $exam->students_notified_at ? $exam->students_notified_at->toISOString() : null,
                     'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
                     'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
                 ];
@@ -1204,6 +1159,10 @@ class ExamController extends Controller
                     'locaux' => $locaux,
                     'superviseurs' => $superviseursNames,
                     'professeurs' => $professeursNames,
+                    'supervisors_notified' => $exam->supervisors_notified ?? false,
+                    'students_notified' => $exam->students_notified ?? false,
+                    'supervisors_notified_at' => $exam->supervisors_notified_at ? $exam->supervisors_notified_at->toISOString() : null,
+                    'students_notified_at' => $exam->students_notified_at ? $exam->students_notified_at->toISOString() : null,
                     'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
                     'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
                 ];
@@ -1319,6 +1278,10 @@ class ExamController extends Controller
                     'locaux' => $locaux,
                     'superviseurs' => $superviseursNames,
                     'professeurs' => $professeursNames,
+                    'supervisors_notified' => $exam->supervisors_notified ?? false,
+                    'students_notified' => $exam->students_notified ?? false,
+                    'supervisors_notified_at' => $exam->supervisors_notified_at ? $exam->supervisors_notified_at->toISOString() : null,
+                    'students_notified_at' => $exam->students_notified_at ? $exam->students_notified_at->toISOString() : null,
                     'created_at' => $exam->created_at ? $exam->created_at->toISOString() : null,
                     'updated_at' => $exam->updated_at ? $exam->updated_at->toISOString() : null
                 ];
@@ -1569,6 +1532,117 @@ class ExamController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to send updated convocations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send notifications to supervisors and professors for an exam
+     */
+    public function sendSupervisorNotifications($id)
+    {
+        try {
+            $exam = Exam::findOrFail($id);
+
+            // Send notifications to supervisors
+            if ($exam->superviseurs) {
+                $superviseurNames = is_string($exam->superviseurs)
+                    ? explode(',', $exam->superviseurs)
+                    : [];
+
+                foreach ($superviseurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $superviseur = Superviseur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+
+                        if ($superviseur && $superviseur->email) {
+                            try {
+                                Mail::to($superviseur->email)
+                                    ->send(new ExamSurveillanceNotification($exam, $name));
+                                Log::info("Notification sent to supervisor: {$name} ({$superviseur->email})");
+                            } catch (\Exception $e) {
+                                Log::error("Error sending email to supervisor {$name}: " . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Supervisor not found or email missing: {$name}");
+                        }
+                    }
+                }
+            }
+
+            // Send notifications to professors
+            if ($exam->professeurs) {
+                $professeurNames = is_string($exam->professeurs)
+                    ? explode(',', $exam->professeurs)
+                    : [];
+
+                foreach ($professeurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $professeur = Professeur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+
+                        if ($professeur && $professeur->email) {
+                            try {
+                                Mail::to($professeur->email)
+                                    ->send(new ExamSurveillanceNotification($exam, $name));
+                                Log::info("Notification sent to professor: {$name} ({$professeur->email})");
+                            } catch (\Exception $e) {
+                                Log::error("Error sending email to professor {$name}: " . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Professor not found or email missing: {$name}");
+                        }
+                    }
+                }
+            }
+
+            // Update the notification status
+            $exam->supervisors_notified = true;
+            $exam->supervisors_notified_at = now();
+            $exam->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Notifications sent to supervisors and professors successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send notifications',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send convocations to students for an exam
+     */
+    public function sendStudentConvocations($id)
+    {
+        try {
+            $exam = Exam::findOrFail($id);
+
+            // Use the ExamNotificationService to send convocations to students
+            app(\App\Services\ExamNotificationService::class)->generateAndSendNotifications($exam);
+
+            // Update the notification status
+            $exam->students_notified = true;
+            $exam->students_notified_at = now();
+            $exam->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Convocations sent to students successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send convocations',
                 'error' => $e->getMessage()
             ], 500);
         }

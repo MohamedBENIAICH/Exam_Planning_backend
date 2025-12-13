@@ -64,6 +64,12 @@ Route::prefix('exams')->group(function () {
     // Send updated convocations route
     Route::post('/{id}/send-updated-convocations', [ExamController::class, 'sendUpdatedConvocations']);
 
+    // Send notifications to supervisors/professors
+    Route::post('/{id}/send-supervisor-notifications', [ExamController::class, 'sendSupervisorNotifications']);
+
+    // Send convocations to students
+    Route::post('/{id}/send-student-convocations', [ExamController::class, 'sendStudentConvocations']);
+
     // Exam-Classroom Assignment
     Route::post('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'store']);
     Route::get('{exam_id}/assignments', [ExamClassroomAssignmentController::class, 'show']);

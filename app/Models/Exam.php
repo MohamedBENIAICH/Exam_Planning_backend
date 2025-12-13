@@ -20,7 +20,11 @@ class Exam extends Model
         'locaux',
         'superviseurs',
         'professeurs',
-        'status'
+        'status',
+        'supervisors_notified',
+        'students_notified',
+        'supervisors_notified_at',
+        'students_notified_at'
     ];
 
     protected $casts = [
@@ -29,7 +33,11 @@ class Exam extends Model
         'heure_fin' => 'datetime:H:i',
         'formation' => 'integer',
         'filiere' => 'integer',
-        'module_id' => 'integer'
+        'module_id' => 'integer',
+        'supervisors_notified' => 'boolean',
+        'students_notified' => 'boolean',
+        'supervisors_notified_at' => 'datetime',
+        'students_notified_at' => 'datetime'
     ];
 
     public function formation()
