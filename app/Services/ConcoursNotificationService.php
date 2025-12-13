@@ -730,4 +730,64 @@ class ConcoursNotificationService
             }
         }
     }
+
+    /**
+     * Send convocations only to candidats (not to profs/supervisors)
+     *
+     * @param Concours $concours
+     * @return void
+     */
+    public function sendCandidatConvocationsOnly(Concours $concours)
+    {
+        // Load candidats relationship
+        $concours->load(['candidats']);
+
+        Log::info('Début de l\'envoi des convocations uniquement aux candidats', [
+            'concours_id' => $concours->id,
+            'candidats_count' => $concours->candidats->count(),
+            'titre' => $concours->titre
+        ]);
+
+        // Send convocations only to candidats
+        foreach ($concours->candidats as $candidat) {
+            try {
+                if (empty($candidat->email)) {
+                    Log::error('Candidat has no email address', [
+                        'candidat_id' => $candidat->id,
+                        'name' => $candidat->prenom . ' ' . $candidat->nom
+                    ]);
+                    continue;
+                }
+
+                // Generate PDF convocation
+                $pdf = $this->generateConvocationPDF($candidat, $concours);
+
+                // Prepare email data
+                $emailData = [
+                    'pdf_data' => $pdf,
+                    'concours' => [
+                        'titre' => $concours->titre,
+                        'date' => $concours->date_concours ? \Carbon\Carbon::parse($concours->date_concours)->format('d/m/Y') : 'Date non spécifiée',
+                        'heure_debut' => $concours->heure_debut ? \Carbon\Carbon::parse($concours->heure_debut)->format('H:i') : 'Heure non spécifiée',
+                        'heure_fin' => $concours->heure_fin ? \Carbon\Carbon::parse($concours->heure_fin)->format('H:i') : 'Heure non spécifiée',
+                        'locaux' => $concours->locaux ?: 'Local non spécifié',
+                        'type_epreuve' => $concours->type_epreuve
+                    ]
+                ];
+
+                // Send convocation
+                Mail::to($candidat->email)->send(new ConcoursConvocation($candidat, $emailData));
+
+                Log::info('Convocation sent successfully to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'email' => $candidat->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send convocation to candidat', [
+                    'candidat_id' => $candidat->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
 }

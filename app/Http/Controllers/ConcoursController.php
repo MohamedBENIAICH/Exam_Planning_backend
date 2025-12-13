@@ -501,6 +501,11 @@ class ConcoursController extends Controller
         try {
             $this->concoursNotificationService->sendSurveillanceNotifications($concours);
             \Illuminate\Support\Facades\Log::info('Notifications de surveillance envoyées pour la modification du concours', ['concours_id' => $concours->id]);
+
+            // Update the status after sending
+            $concours->supervisors_notified = true;
+            $concours->supervisors_notified_at = now();
+            $concours->save();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Erreur lors de l\'envoi des notifications de surveillance lors de la modification', [
                 'concours_id' => $concours->id,
@@ -526,6 +531,11 @@ class ConcoursController extends Controller
                 'concours_id' => $concours->id,
                 'candidats_count' => $concours->candidats->count()
             ]);
+
+            // Update the status after sending
+            $concours->candidats_notified = true;
+            $concours->candidats_notified_at = now();
+            $concours->save();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Erreur lors de l\'envoi des convocations mises à jour lors de la modification', [
                 'concours_id' => $concours->id,
@@ -533,6 +543,8 @@ class ConcoursController extends Controller
             ]);
         }
 
+        // Reload the concours to include updated status fields
+        $concours->refresh();
         return response()->json($concours);
     }
 
@@ -559,10 +571,17 @@ class ConcoursController extends Controller
             }
 
             // Mettre à jour le statut pour les notifications
-            $concours->status = 'annulé';
+            $concours->status = 'cancelled';
 
             // Envoyer les notifications d'annulation AVANT de supprimer
             app(\App\Services\ConcoursNotificationService::class)->sendCancellationNotifications($concours);
+
+            // Update the status after sending cancellation notifications
+            $concours->supervisors_notified = true;
+            $concours->supervisors_notified_at = now();
+            $concours->candidats_notified = true;
+            $concours->candidats_notified_at = now();
+            $concours->save();
 
             // Supprimer le concours de la base de données
             $concours->delete();
@@ -886,8 +905,8 @@ class ConcoursController extends Controller
         try {
             $concours = Concours::with(['candidats'])->findOrFail($id);
 
-            // Send convocations using the service
-            $this->concoursNotificationService->generateAndSendNotifications($concours);
+            // Send convocations ONLY to candidats (not to profs/supervisors)
+            $this->concoursNotificationService->sendCandidatConvocationsOnly($concours);
 
             // Update the notification status
             $concours->candidats_notified = true;

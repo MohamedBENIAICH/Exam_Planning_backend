@@ -49,6 +49,27 @@ class ConcoursUpdateNotification extends Mailable
             default => 'emails.concours.update-supervisor'
         };
 
+        // Format locaux for display
+        $locauxDisplay = 'Local non spécifié';
+        if ($this->concours->locaux) {
+            if (is_array($this->concours->locaux)) {
+                // If it's an array of objects with nom_local
+                $locauxDisplay = collect($this->concours->locaux)
+                    ->map(function ($local) {
+                        if (is_array($local) && isset($local['nom_local'])) {
+                            return $local['nom_local'];
+                        } elseif (is_object($local) && isset($local->nom_local)) {
+                            return $local->nom_local;
+                        }
+                        return null;
+                    })
+                    ->filter()
+                    ->join(', ');
+            } elseif (is_string($this->concours->locaux)) {
+                $locauxDisplay = $this->concours->locaux;
+            }
+        }
+
         return new Content(
             view: $view,
             with: [
@@ -58,7 +79,7 @@ class ConcoursUpdateNotification extends Mailable
                 'date' => $this->concours->date_concours ? \Carbon\Carbon::parse($this->concours->date_concours)->format('d/m/Y') : 'Date non spécifiée',
                 'heure_debut' => $this->concours->heure_debut ? \Carbon\Carbon::parse($this->concours->heure_debut)->format('H:i') : 'Heure non spécifiée',
                 'heure_fin' => $this->concours->heure_fin ? \Carbon\Carbon::parse($this->concours->heure_fin)->format('H:i') : 'Heure non spécifiée',
-                'locaux' => $this->concours->locaux ?: 'Local non spécifié',
+                'locaux' => $locauxDisplay ?: 'Local non spécifié',
                 'type_epreuve' => $this->concours->type_epreuve
             ]
         );
