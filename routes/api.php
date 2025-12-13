@@ -283,6 +283,11 @@ Route::prefix('concours')->group(function () {
     // Send updated convocations route
     Route::post('/{id}/send-updated-convocations', [ConcoursController::class, 'sendUpdatedConvocations']);
 
+    // Manual notification endpoints (new)
+    Route::post('/{id}/send-supervisor-notifications-manual', [ConcoursController::class, 'sendSupervisorNotificationsManual']);
+    Route::post('/{id}/send-candidat-convocations-manual', [ConcoursController::class, 'sendCandidatConvocationsManual']);
+
+    // Legacy endpoints (keep for backward compatibility if needed)
     Route::post('/{id}/send-convocations', [ConcoursController::class, 'sendConvocations']);
     Route::post('/{id}/send-surveillance-notifications', [ConcoursController::class, 'sendSurveillanceNotifications']);
     Route::get('/{id}/download-report', [ConcoursController::class, 'downloadReport']);

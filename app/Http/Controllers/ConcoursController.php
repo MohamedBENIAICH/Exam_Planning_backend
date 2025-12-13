@@ -180,13 +180,8 @@ class ConcoursController extends Controller
             // Commit the transaction
             \Illuminate\Support\Facades\DB::commit();
 
-            // Send notifications
-            try {
-                $this->concoursNotificationService->sendConcoursCreatedNotifications($concours);
-            } catch (\Exception $e) {
-                // Log the error but don't fail the request
-                \Illuminate\Support\Facades\Log::error('Failed to send notifications: ' . $e->getMessage());
-            }
+            // Note: Email notifications are no longer sent automatically on concours creation
+            // Use the dedicated endpoints to send notifications to supervisors/professors and candidats
 
             return response()->json([
                 'status' => 'success',
@@ -851,5 +846,66 @@ class ConcoursController extends Controller
             'available' => empty($conflicts),
             'conflicts' => $conflicts
         ]);
+    }
+
+    /**
+     * Send notifications to supervisors and professors for a concours
+     */
+    public function sendSupervisorNotificationsManual($id)
+    {
+        try {
+            $concours = Concours::with(['superviseurs', 'professeurs'])->findOrFail($id);
+
+            // Send notifications using the service
+            $this->concoursNotificationService->sendSurveillanceNotifications($concours);
+
+            // Update the notification status
+            $concours->supervisors_notified = true;
+            $concours->supervisors_notified_at = now();
+            $concours->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Notifications sent to supervisors and professors successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error sending supervisor notifications: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send notifications',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send convocations to candidats for a concours
+     */
+    public function sendCandidatConvocationsManual($id)
+    {
+        try {
+            $concours = Concours::with(['candidats'])->findOrFail($id);
+
+            // Send convocations using the service
+            $this->concoursNotificationService->generateAndSendNotifications($concours);
+
+            // Update the notification status
+            $concours->candidats_notified = true;
+            $concours->candidats_notified_at = now();
+            $concours->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Convocations sent to candidats successfully',
+                'candidats_count' => $concours->candidats->count()
+            ], 200);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error sending candidat convocations: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send convocations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

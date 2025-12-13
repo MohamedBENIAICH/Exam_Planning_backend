@@ -18,12 +18,20 @@ class Concours extends Model
         'heure_fin',
         'locaux',
         'type_epreuve',
-        'status'
+        'status',
+        'supervisors_notified',
+        'candidats_notified',
+        'supervisors_notified_at',
+        'candidats_notified_at'
     ];
 
     protected $casts = [
         'date_concours' => 'date',
         'locaux' => 'array',
+        'supervisors_notified' => 'boolean',
+        'candidats_notified' => 'boolean',
+        'supervisors_notified_at' => 'datetime',
+        'candidats_notified_at' => 'datetime'
     ];
 
     public function candidats()
