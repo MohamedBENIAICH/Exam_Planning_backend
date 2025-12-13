@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Superviseur;
+use App\Services\SuperviseurService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\Validator;
  */
 class SuperviseurController extends Controller
 {
+    protected $superviseurService;
+
+    public function __construct(SuperviseurService $superviseurService)
+    {
+        $this->superviseurService = $superviseurService;
+    }
     /**
      * @OA\Get(
      *     path="/api/superviseurs",
@@ -41,12 +47,7 @@ class SuperviseurController extends Controller
      */
     public function index()
     {
-        // $superviseurs = Superviseur::select('id', 'nom', 'prenom', 'poste')
-        //     ->orderBy('nom')
-        //     ->get();
-
-        $superviseurs = Superviseur::get();
-
+        $superviseurs = $this->superviseurService->getAllSuperviseurs();
         return response()->json($superviseurs);
     }
 
@@ -103,10 +104,7 @@ class SuperviseurController extends Controller
         }
 
         try {
-            // Get supervisors by department
-            $superviseurs = Superviseur::where('service', $request->service)
-                ->select('id', 'service', 'nom', 'prenom', 'type')
-                ->get();
+            $superviseurs = $this->superviseurService->getSuperviseursByService($request->service);
 
             return response()->json([
                 'status' => 'success',
@@ -144,11 +142,7 @@ class SuperviseurController extends Controller
     public function getAllServices()
     {
         try {
-            // Get all unique departments
-            $services = Superviseur::select('service')
-                ->distinct()
-                ->orderBy('service')
-                ->pluck('service');
+            $services = $this->superviseurService->getAllServices();
 
             return response()->json([
                 'status' => 'success',
@@ -165,7 +159,7 @@ class SuperviseurController extends Controller
 
     public function store(Request $request)
     {
-        $validatedDate = $request->validate([
+        $validatedData = $request->validate([
             'nom' => 'required|string',
             'prenom' => 'required|string',
             'email' => 'required|email|unique:superviseurs',
@@ -173,7 +167,7 @@ class SuperviseurController extends Controller
             'service' => 'required|string'
         ]);
 
-        $superviseur = Superviseur::create($validatedDate);
+        $superviseur = $this->superviseurService->createSuperviseur($validatedData);
 
         return response()->json($superviseur, 201);
     }
@@ -202,9 +196,7 @@ class SuperviseurController extends Controller
      */
     public function destroy($id)
     {
-        $superviseur = Superviseur::findOrFail($id);
-        $superviseur->delete();
-
+        $this->superviseurService->deleteSuperviseur($id);
         return response()->json(['message' => 'Supervisor deleted successfully'], 200);
     }
 
@@ -258,8 +250,6 @@ class SuperviseurController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $superviseur = Superviseur::findOrFail($id);
-
         $validatedData = $request->validate([
             'nom' => 'nullable|string',
             'prenom' => 'nullable|string',
@@ -268,7 +258,7 @@ class SuperviseurController extends Controller
             'service' => 'nullable|string'
         ]);
 
-        $superviseur->update($validatedData);
+        $superviseur = $this->superviseurService->updateSuperviseur($id, $validatedData);
 
         return response()->json($superviseur, 200);
     }

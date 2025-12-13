@@ -125,11 +125,102 @@ class ExamController extends Controller
     public function show($id)
     {
         try {
-            $exam = Exam::with('students')->findOrFail($id);
+            // Load the exam with all necessary relationships for editing
+            $exam = Exam::with(['students', 'classrooms', 'superviseurs', 'professeurs'])->findOrFail($id);
+
+            // Prepare students data in the format expected by the frontend
+            $studentsData = $exam->students->map(function ($student) {
+                return [
+                    'studentId' => $student->numero_etudiant,
+                    'id' => $student->id,
+                    'firstName' => $student->prenom,
+                    'lastName' => $student->nom,
+                    'email' => $student->email,
+                    'program' => $student->filiere,
+                    'cne' => $student->cne ?? '',
+                    'nom' => $student->nom,
+                    'prenom' => $student->prenom,
+                    'numero_etudiant' => $student->numero_etudiant,
+                ];
+            });
+
+            // Process superviseurs - prioritize relationship over string column
+            $superviseurIds = [];
+            // First check the relationship (pivot table)
+            if ($exam->relationLoaded('superviseurs')
+                && $exam->superviseurs !== null
+                && is_object($exam->superviseurs)
+                && method_exists($exam->superviseurs, 'isNotEmpty')
+                && $exam->superviseurs->isNotEmpty()) {
+                $superviseurIds = $exam->superviseurs->pluck('id')->toArray();
+            }
+            // If no relationship data, try parsing from string column
+            else if (isset($exam->getAttributes()['superviseurs']) && !empty($exam->getAttributes()['superviseurs'])) {
+                $superviseurString = $exam->getAttributes()['superviseurs'];
+                $superviseurNames = explode(',', $superviseurString);
+                foreach ($superviseurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $superviseur = \App\Models\Superviseur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+                        if ($superviseur) {
+                            $superviseurIds[] = $superviseur->id;
+                        }
+                    }
+                }
+            }
+
+            // Process professeurs - prioritize relationship over string column
+            $professeurIds = [];
+            // First check the relationship (pivot table)
+            if ($exam->relationLoaded('professeurs')
+                && $exam->professeurs !== null
+                && is_object($exam->professeurs)
+                && method_exists($exam->professeurs, 'isNotEmpty')
+                && $exam->professeurs->isNotEmpty()) {
+                $professeurIds = $exam->professeurs->pluck('id')->toArray();
+            }
+            // If no relationship data, try parsing from string column
+            else if (isset($exam->getAttributes()['professeurs']) && !empty($exam->getAttributes()['professeurs'])) {
+                $professeurString = $exam->getAttributes()['professeurs'];
+                $professeurNames = explode(',', $professeurString);
+                foreach ($professeurNames as $name) {
+                    $nameParts = explode(' ', trim($name));
+                    if (count($nameParts) >= 2) {
+                        $professeur = \App\Models\Professeur::where('prenom', $nameParts[0])
+                            ->where('nom', $nameParts[1])
+                            ->first();
+                        if ($professeur) {
+                            $professeurIds[] = $professeur->id;
+                        }
+                    }
+                }
+            }
+
+            // Prepare the response data with all necessary IDs and relationships
+            $responseData = [
+                'id' => $exam->id,
+                'formation' => $exam->formation, // This is the formation ID
+                'filiere' => $exam->filiere, // This is the filiere ID
+                'module' => $exam->module_id, // Map module_id to module for consistency
+                'semestre' => $exam->semestre,
+                'date_examen' => $exam->date_examen,
+                'heure_debut' => $exam->heure_debut,
+                'heure_fin' => $exam->heure_fin,
+                'locaux' => $exam->locaux,
+                'superviseurs' => $superviseurIds, // Array of supervisor IDs
+                'professeurs' => $professeurIds, // Array of professor IDs
+                'classroom_ids' => $exam->classrooms->pluck('id')->toArray(),
+                'students' => $studentsData->pluck('studentId')->toArray(), // Array of student IDs (numero_etudiant)
+                'students_data' => $studentsData->toArray(), // Full student objects
+                'created_at' => $exam->created_at,
+                'updated_at' => $exam->updated_at,
+            ];
 
             return response()->json([
                 'status' => 'success',
-                'data' => $exam
+                'data' => $responseData
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -849,13 +940,16 @@ class ExamController extends Controller
             DB::commit();
 
             // Load the updated exam with relationships
-            $exam->load(['students', 'superviseurs']);
+            $exam->load(['students', 'superviseurs', 'module', 'classrooms']);
 
             // Send notifications to supervisors
             app(\App\Services\ExamNotificationService::class)->sendSupervisorNotifications($exam);
 
             // Send update notifications to professors and supervisors
             app(\App\Services\ExamNotificationService::class)->sendUpdateNotifications($exam);
+
+            // Send updated convocations to students
+            app(\App\Services\ExamNotificationService::class)->sendUpdatedConvocations($exam);
 
             return response()->json([
                 'status' => 'success',

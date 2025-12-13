@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Student;
-use App\Models\Exam;
+use App\Services\StudentService;
 use Illuminate\Http\Request;
 
 /**
@@ -14,6 +13,13 @@ use Illuminate\Http\Request;
  */
 class StudentController extends Controller
 {
+    protected $studentService;
+
+    public function __construct(StudentService $studentService)
+    {
+        $this->studentService = $studentService;
+    }
+
     /**
      * @OA\Get(
      *     path="/api/students",
@@ -41,7 +47,7 @@ class StudentController extends Controller
     public function index()
     {
         try {
-            $students = Student::all();
+            $students = $this->studentService->getAllStudents();
 
             return response()->json([
                 'status' => 'success',
@@ -74,7 +80,7 @@ class StudentController extends Controller
     public function count()
     {
         try {
-            $count = Student::count();
+            $count = $this->studentService->getStudentCount();
 
             return response()->json([
                 'status' => 'success',
@@ -121,11 +127,7 @@ class StudentController extends Controller
     public function getStudentsByExamId($examId)
     {
         try {
-            // Check if the exam exists
-            $exam = Exam::findOrFail($examId);
-
-            // Get students associated with this exam
-            $students = $exam->students;
+            $students = $this->studentService->getStudentsByExamId($examId);
 
             return response()->json([
                 'status' => 'success',

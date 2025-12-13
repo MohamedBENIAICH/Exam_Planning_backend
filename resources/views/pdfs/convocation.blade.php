@@ -219,10 +219,6 @@
                 <p>Vous êtes tenu(e) de vous présenter au local indiqué une demi-heure avant chaque épreuve, muni(e) de
                     la présente convocation, de votre carte d'étudiant et de votre pièce d'identité.</p>
             </div>
-
-            <div class="stamp">
-                <img src="{{ public_path('images/cachet.png') }}" alt="Tampon officiel">
-            </div>
         </div>
     </div>
 </body>

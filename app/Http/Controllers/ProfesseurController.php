@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Professeur;
+use App\Services\ProfesseurService;
 use Illuminate\Http\Request;
 
 /**
@@ -13,6 +13,12 @@ use Illuminate\Http\Request;
  */
 class ProfesseurController extends Controller
 {
+    protected $professeurService;
+
+    public function __construct(ProfesseurService $professeurService)
+    {
+        $this->professeurService = $professeurService;
+    }
     /**
      * @OA\Get(
      *     path="/api/professeurs/by-departement",
@@ -45,11 +51,7 @@ class ProfesseurController extends Controller
     public function getByDepartement(Request $request)
     {
         $departement = $request->query('departement');
-
-        $professeurs = Professeur::where('departement', $departement)
-            ->select('id', 'nom', 'prenom', 'email', 'departement')
-            ->get();
-
+        $professeurs = $this->professeurService->getProfesseursByDepartement($departement);
         return response()->json($professeurs);
     }
 
@@ -70,11 +72,7 @@ class ProfesseurController extends Controller
      */
     public function getAllDepartements()
     {
-        $departements = Professeur::select('departement')
-            ->distinct()
-            ->orderBy('departement')
-            ->pluck('departement');
-
+        $departements = $this->professeurService->getAllDepartements();
         return response()->json($departements);
     }
 
@@ -102,8 +100,7 @@ class ProfesseurController extends Controller
      */
     public function index()
     {
-        $professeurs = Professeur::all();
-
+        $professeurs = $this->professeurService->getAllProfesseurs();
         return response()->json($professeurs);
     }
 
@@ -153,7 +150,7 @@ class ProfesseurController extends Controller
             'departement' => 'required|string'
         ]);
 
-        $professeur = Professeur::create($validatedData);
+        $professeur = $this->professeurService->createProfesseur($validatedData);
 
         return response()->json($professeur, 201);
     }
@@ -182,9 +179,7 @@ class ProfesseurController extends Controller
      */
     public function destroy($id)
     {
-        $professeur = Professeur::findOrFail($id);
-        $professeur->delete();
-
+        $this->professeurService->deleteProfesseur($id);
         return response()->json(['message' => 'Professor deleted successfully'], 200);
     }
 
@@ -236,8 +231,6 @@ class ProfesseurController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $professeur = Professeur::findOrFail($id);
-
         $validatedData = $request->validate([
             'email' => 'nullable|email|unique:professeurs,email,' . $id,
             'nom' => 'nullable|string',
@@ -245,7 +238,7 @@ class ProfesseurController extends Controller
             'departement' => 'nullable|string'
         ]);
 
-        $professeur->update($validatedData);
+        $professeur = $this->professeurService->updateProfesseur($id, $validatedData);
 
         return response()->json($professeur, 200);
     }
@@ -266,7 +259,7 @@ class ProfesseurController extends Controller
      */
     public function count()
     {
-        $count = Professeur::count();
+        $count = $this->professeurService->getProfesseurCount();
         return response()->json(['status' => 'success', 'count' => $count]);
     }
 }
