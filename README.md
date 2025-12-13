@@ -10,6 +10,9 @@ Ce projet est une API backend développée avec Laravel, conçue pour gérer la 
 -   **Base de données :** MySQL
 -   **Gestionnaire de Dépendances :** Composer
 -   **Documentation API :** L5-Swagger (OpenAPI)
+-   **Génération de PDF :** DomPDF (barryvdh/laravel-dompdf)
+-   **Génération de QR Codes :** Endroid QR Code, Chillerlan PHP QR Code
+-   **Architecture :** Repository Pattern (Controller → Service → Repository)
 
 ## Environnements de Développement Recommandés
 
@@ -193,6 +196,67 @@ Le système intègre une gestion complète des présences et absences des étudi
 
 Cette gestion permet un suivi précis et automatisé des absences lors des examens.
 
+## Système de Suivi des Notifications par Email
+
+Le système intègre un mécanisme de suivi des notifications envoyées pour les examens et concours :
+
+### Fonctionnalités de Suivi
+
+-   **Suivi des notifications superviseurs** :
+    -   Champ `supervisors_notified` (booléen) : Indique si les superviseurs ont été notifiés
+    -   Champ `supervisors_notified_at` (timestamp) : Date et heure de l'envoi des notifications
+-   **Suivi des notifications étudiants/candidats** :
+    -   Pour les examens : `students_notified` et `students_notified_at`
+    -   Pour les concours : `candidats_notified` et `candidats_notified_at`
+
+### Avantages
+
+-   **Traçabilité complète** : Historique précis de tous les envois de notifications
+-   **Prévention des doublons** : Évite l'envoi multiple de notifications
+-   **Audit** : Permet de vérifier quand et à qui les notifications ont été envoyées
+-   **Fiabilité** : Garantit que toutes les parties prenantes sont informées
+
+### Migrations
+
+Nouvelles migrations appliquées :
+
+-   `2025_12_13_115807_add_email_status_to_exams_table.php`
+-   `2025_12_13_140108_add_email_status_to_concours_table.php`
+
+## Architecture du Projet
+
+Le projet suit une architecture en couches propre : **Controller → Service → Repository**
+
+### Couches de l'Architecture
+
+-   **Controllers** : Gestion des requêtes HTTP et des réponses
+-   **Services** : Logique métier et orchestration des opérations
+-   **Repositories** : Accès aux données et requêtes de base de données
+
+Pour plus de détails sur l'architecture, consultez le fichier [ARCHITECTURE.md](ARCHITECTURE.md).
+
+### Services Implémentés
+
+-   `AttendanceService` : Gestion des présences et absences
+-   `StudentService` : Gestion des étudiants
+-   `ExamService` : Gestion complexe des examens avec relations
+-   `ClassroomService` : Gestion des salles et planification
+-   `SuperviseurService` : Gestion des superviseurs
+-   `ProfesseurService` : Gestion des professeurs
+-   `ExamNotificationService` : Notifications pour les examens
+-   `ConcoursNotificationService` : Notifications pour les concours
+-   `QRCodeService` : Génération de QR codes
+
+### Repositories Implémentés
+
+-   `BaseRepository` : Opérations CRUD communes
+-   `AttendanceRepository` : Gestion des présences
+-   `StudentRepository` : Gestion des étudiants
+-   `ExamRepository` : Gestion des examens
+-   `ClassroomRepository` : Gestion des salles
+-   `SuperviseurRepository` : Gestion des superviseurs
+-   `ProfesseurRepository` : Gestion des professeurs
+
 ## Nouvelles Fonctionnalités - Annulation et Notifications Automatiques
 
 ### Fonctionnalité d'Annulation
@@ -226,7 +290,16 @@ Lorsqu'un examen ou concours est annulé :
 ```
 POST /api/exams/{id}/send-updated-convocations
 POST /api/concours/{id}/send-updated-convocations
+POST /api/concours/{id}/send-supervisor-notifications-manual
+POST /api/concours/{id}/send-candidat-convocations-manual
 ```
+
+### Endpoints Manuels pour Concours
+
+Des endpoints spécifiques permettent l'envoi manuel de notifications :
+
+-   **Notifications superviseurs manuelles** : Permet de renvoyer les notifications aux superviseurs si nécessaire
+-   **Convocations candidats manuelles** : Permet de renvoyer les convocations aux candidats
 
 ### Statut des Événements
 
