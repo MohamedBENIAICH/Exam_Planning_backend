@@ -185,7 +185,7 @@
                 <span class="info-label">Locaux:</span>
                 <span class="info-value">
                     @php
-                        $locaux = json_decode($concours->locaux, true);
+                        $locaux = $concours->locaux;
                         if (is_array($locaux)) {
                             $localKeys = array_column($locaux, 'nom_du_local');
                             if (empty(array_filter($localKeys))) {
@@ -193,7 +193,7 @@
                             }
                             echo implode(', ', $localKeys);
                         } else {
-                            echo $concours->locaux;
+                            echo $locaux ?? 'N/A';
                         }
                     @endphp
                 </span>

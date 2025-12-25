@@ -1457,7 +1457,7 @@ class ExamController extends Controller
             ]);
 
             // Générer le PDF
-            $pdf = PDF::loadView('pdfs.exam-convocation', $data);
+            $pdf = PDF::loadView('pdfs.exam_report', $data);
 
             // Configurer le PDF
             $pdf->setPaper('A4', 'portrait');
